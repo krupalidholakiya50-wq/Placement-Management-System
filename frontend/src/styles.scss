@@ -1,0 +1,344 @@
+/* Placement Management System - Premium SaaS Corporate Design System */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary: #ffffff;
+  --secondary-border: #e2e8f0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --bg-main: #f8fafc;
+  --bg-sidebar: #0f172a;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 1400px Max Content Container */
+.app-main-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Compact High-Contrast TPO Hero Banner */
+.tpo-hero-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  border-radius: var(--radius-lg);
+  color: #ffffff !important;
+  border: 1px solid #334155;
+  box-shadow: var(--shadow-lg);
+}
+
+.tpo-hero-banner h1, 
+.tpo-hero-banner h2, 
+.tpo-hero-banner h3, 
+.tpo-hero-banner p, 
+.tpo-hero-banner span {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.tpo-hero-banner .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+/* Enterprise Elevative Cards */
+.enterprise-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease;
+}
+
+.enterprise-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+/* Clean Professional KPI Stat Cards (No Text Overlapping) */
+.stat-card-enterprise {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+  }
+
+  .stat-content {
+    flex-grow: 1;
+    min-width: 0;
+  }
+
+  .stat-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    line-height: 1.2;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+    margin-bottom: 0;
+  }
+}
+
+/* Glassmorphism Header */
+.glass-header {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+/* Standardized Button Design System */
+.btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+.btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+.btn-secondary, .btn-outline-secondary {
+  background-color: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  color: #0f172a !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 600 !important;
+}
+.btn-secondary:hover, .btn-outline-secondary:hover {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+.btn-success {
+  background-color: var(--success) !important;
+  border-color: var(--success) !important;
+  color: #ffffff !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 600 !important;
+}
+
+.btn-warning {
+  background-color: var(--warning) !important;
+  border-color: var(--warning) !important;
+  color: #0f172a !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 600 !important;
+}
+
+.btn-danger {
+  background-color: var(--danger) !important;
+  border-color: var(--danger) !important;
+  color: #ffffff !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 600 !important;
+}
+
+/* Enterprise Material Table Styling */
+.table-responsive {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.table-responsive .table {
+  margin-bottom: 0;
+}
+
+.table-responsive .table thead th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 16px;
+}
+
+.table-responsive .table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table-responsive .table tbody tr:hover {
+  background-color: rgba(241, 245, 249, 0.7);
+}
+
+.table-responsive .table tbody td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+/* 8px Grid Utilities */
+.p-8 { padding: 8px !important; }
+.p-16 { padding: 16px !important; }
+.p-20 { padding: 20px !important; }
+.p-24 { padding: 24px !important; }
+.gap-12 { gap: 12px !important; }
+.gap-16 { gap: 16px !important; }
+.rounded-16 { border-radius: 16px !important; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN SYSTEM FOR ALL DEVICES (MOBILE, TABLET & DESKTOP)
+   ========================================================================== */
+
+/* Tablet & Mobile Screens (< 992px) */
+@media (max-width: 991.98px) {
+  .app-main-container {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .tpo-hero-banner {
+    padding: 18px !important;
+  }
+
+  .stat-card-enterprise {
+    padding: 12px;
+    gap: 8px;
+
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      font-size: 1.1rem;
+    }
+
+    .stat-label {
+      font-size: 0.62rem;
+    }
+
+    .stat-value {
+      font-size: 1.15rem;
+    }
+  }
+
+  /* Responsive Offcanvas Sidebar Drawer on Mobile */
+  .sidebar-wrapper {
+    position: fixed !important;
+    top: 60px;
+    bottom: 0;
+    left: 0;
+    z-index: 1040;
+    transform: translateX(0);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .sidebar-wrapper.collapsed {
+    transform: translateX(-100%);
+    width: 260px !important;
+  }
+
+  /* Make tables easy to swipe horizontally on touch screens */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Full Width Modal on Mobile */
+  .modal-dialog {
+    margin: 8px;
+  }
+}
+
+/* Mobile Small Devices (< 576px) */
+@media (max-width: 575.98px) {
+  h2, .h2 { font-size: 1.35rem !important; }
+  h3, .h3 { font-size: 1.2rem !important; }
+  h4, .h4 { font-size: 1.05rem !important; }
+
+  .enterprise-card {
+    padding: 16px !important;
+  }
+
+  .btn {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .stat-card-enterprise {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  /* Stack header elements cleanly */
+  .glass-header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .apx-chart {
+    min-height: 200px;
+  }
+}

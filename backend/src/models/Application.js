@@ -3,7 +3,21 @@ const mongoose = require('mongoose');
 const StatusTimelineSchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ['Applied', 'Shortlisted', 'Online Test', 'Tech Interview', 'HR Interview', 'Selected', 'Rejected', 'No Show'],
+    enum: [
+      'Applied',
+      'Resume Shortlisted',
+      'Aptitude Test Cleared',
+      'Group Discussion Cleared',
+      'Technical Interview Cleared',
+      'HR Interview Cleared',
+      'Selected',
+      'Rejected',
+      'Shortlisted',
+      'Online Test',
+      'Tech Interview',
+      'HR Interview',
+      'No Show'
+    ],
     required: true
   },
   updatedAt: {
@@ -59,7 +73,21 @@ const ApplicationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Applied', 'Shortlisted', 'Online Test', 'Tech Interview', 'HR Interview', 'Selected', 'Rejected', 'No Show'],
+      enum: [
+        'Applied',
+        'Resume Shortlisted',
+        'Aptitude Test Cleared',
+        'Group Discussion Cleared',
+        'Technical Interview Cleared',
+        'HR Interview Cleared',
+        'Selected',
+        'Rejected',
+        'Shortlisted',
+        'Online Test',
+        'Tech Interview',
+        'HR Interview',
+        'No Show'
+      ],
       default: 'Applied'
     },
     statusTimeline: [StatusTimelineSchema],

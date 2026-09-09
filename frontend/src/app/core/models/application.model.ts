@@ -1,5 +1,5 @@
 export interface StatusTimeline {
-  status: 'Applied' | 'Shortlisted' | 'Online Test' | 'Tech Interview' | 'HR Interview' | 'Selected' | 'Rejected' | 'No Show';
+  status: string;
   updatedAt: string | Date;
   note?: string;
 }
@@ -16,9 +16,20 @@ export interface Application {
   cgpa?: number;
   backlogs?: number;
   resumeUrl: string;
-  status: 'Applied' | 'Shortlisted' | 'Online Test' | 'Tech Interview' | 'HR Interview' | 'Selected' | 'Rejected' | 'No Show';
+  status:
+    | 'Applied'
+    | 'Resume Shortlisted'
+    | 'Aptitude Test Cleared'
+    | 'Group Discussion Cleared'
+    | 'Technical Interview Cleared'
+    | 'HR Interview Cleared'
+    | 'Selected'
+    | 'Rejected'
+    | 'No Show'
+    | string;
   statusTimeline?: StatusTimeline[];
   appliedAt?: string | Date;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
+

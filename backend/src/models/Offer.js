@@ -30,14 +30,21 @@ const OfferSchema = new mongoose.Schema(
       type: Date,
       default: () => new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
     },
+    loiText: {
+      type: String,
+      default: 'Dear Student, We are pleased to issue this Letter of Intent (LOI) offering you the position of Software Development Engineer. Congratulations!'
+    },
     offerLetterUrl: {
       type: String,
       default: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
     },
     status: {
       type: String,
-      enum: ['Pending', 'Accepted', 'Rejected'],
+      enum: ['Pending', 'Accepted', 'Declined'],
       default: 'Pending'
+    },
+    respondedAt: {
+      type: Date
     }
   },
   {

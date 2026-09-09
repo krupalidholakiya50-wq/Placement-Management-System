@@ -3,6 +3,7 @@ const {
   getStudents,
   getStudentById,
   getStudentProfile,
+  updateStudentProfileMe,
   submitForVerification,
   verifyStudentProfile,
   unlockStudentProfile,
@@ -11,16 +12,22 @@ const {
   deleteStudent,
   exportStudentsToExcel,
   bulkVerifyStudents,
-  addResumeVersion
+  addResumeVersion,
+  uploadResumeFile
 } = require('../controllers/studentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
 const router = express.Router();
 
+router.post('/upload-resume', upload.single('resume'), uploadResumeFile);
 router.get('/export-excel', protect, exportStudentsToExcel);
 router.post('/bulk-verify', protect, authorize('admin'), bulkVerifyStudents);
 router.post('/resume-version', protect, authorize('student'), addResumeVersion);
-router.get('/profile/me', protect, getStudentProfile);
+router.route('/profile/me')
+  .get(protect, getStudentProfile)
+  .put(protect, updateStudentProfileMe);
+
 router.post('/submit-verification', protect, authorize('student'), submitForVerification);
 router.put('/:id/verify', protect, authorize('admin'), verifyStudentProfile);
 router.put('/:id/unlock', protect, authorize('admin'), unlockStudentProfile);

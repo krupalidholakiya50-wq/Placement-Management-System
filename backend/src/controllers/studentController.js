@@ -26,6 +26,29 @@ const calculateProfileCompletion = (student) => {
   return { percentage, missingFields };
 };
 
+// @desc    STAGE 1: Upload PDF Resume File
+// @route   POST /api/students/upload-resume
+// @access  Public / Private
+exports.uploadResumeFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please select a valid PDF file to upload.' });
+    }
+
+    const host = req.get('host');
+    const protocol = req.protocol;
+    const fileUrl = `${protocol}://${host}/uploads/resumes/${req.file.filename}`;
+
+    res.status(200).json({
+      success: true,
+      message: '📄 Resume PDF uploaded successfully!',
+      fileUrl
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get all students (Search & Multi-Filter supported)
 // @route   GET /api/students
 // @access  Private
@@ -88,7 +111,6 @@ exports.getStudentProfile = async (req, res, next) => {
     }
 
     if (!student) {
-      // Auto-create initial draft profile if not found
       student = await Student.create({
         user: req.user.id,
         studentId: 'STU' + Math.floor(100000 + Math.random() * 900000),
@@ -118,6 +140,69 @@ exports.getStudentProfile = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Update current logged-in student's profile
+// @route   PUT /api/students/profile/me
+// @access  Private (Student)
+exports.updateStudentProfileMe = async (req, res, next) => {
+  try {
+    let student = await Student.findOne({ user: req.user.id });
+    if (!student) {
+      student = await Student.findOne({ email: req.user.email });
+    }
+
+    if (!student) {
+      student = await Student.create({
+        user: req.user.id,
+        studentId: req.body.studentId || 'STU' + Math.floor(100000 + Math.random() * 900000),
+        fullName: req.body.fullName || req.user.name,
+        email: req.user.email,
+        department: req.body.department || req.user.department || 'Computer Science',
+        branch: req.body.branch || 'B.Tech CSE',
+        semester: req.body.semester || '7th Semester',
+        year: req.body.year || '4th Year',
+        cgpa: req.body.cgpa || 8.5,
+        backlogs: req.body.backlogs || 0
+      });
+    }
+
+    if (student.isFrozen && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: '🔒 Profile Data is Frozen & Verified by TPO Cell. CGPA, Branch, Backlogs & Resume cannot be modified. Contact TPO Admin to request unlocking.'
+      });
+    }
+
+    const updatedData = { ...req.body };
+    const merged = { ...student.toObject(), ...updatedData };
+    const { percentage, missingFields } = calculateProfileCompletion(merged);
+    updatedData.profileCompletion = percentage;
+
+    student = await Student.findByIdAndUpdate(student._id, updatedData, {
+      new: true,
+      runValidators: true
+    });
+
+    // Also update User record name & phone if provided
+    if (req.body.fullName || req.body.phone) {
+      await User.findByIdAndUpdate(req.user.id, {
+        ...(req.body.fullName && { name: req.body.fullName }),
+        ...(req.body.phone && { phone: req.body.phone })
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully!',
+      data: student,
+      completionPercentage: percentage,
+      missingFields
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 // @desc    STAGE 1: Submit profile for TPO Verification
 // @route   POST /api/students/submit-verification
@@ -155,7 +240,7 @@ exports.submitForVerification = async (req, res, next) => {
 // @access  Private (Admin)
 exports.verifyStudentProfile = async (req, res, next) => {
   try {
-    const { action, note } = req.body; // action: 'approve' | 'reject'
+    const { action, note } = req.body;
     const student = await Student.findById(req.params.id);
 
     if (!student) {
@@ -164,7 +249,7 @@ exports.verifyStudentProfile = async (req, res, next) => {
 
     if (action === 'approve') {
       student.verificationStatus = 'Verified';
-      student.isFrozen = true; // MANDATORY DATA FREEZE RULE
+      student.isFrozen = true;
       student.verificationNote = note || 'Verified by TPO Office. Academic credentials locked.';
     } else {
       student.verificationStatus = 'Rejected';
@@ -221,7 +306,6 @@ exports.updateStudent = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Student record not found' });
     }
 
-    // MANDATORY DATA FREEZE GUARD
     if (student.isFrozen && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -229,7 +313,6 @@ exports.updateStudent = async (req, res, next) => {
       });
     }
 
-    // Recalculate profile completion
     const updatedData = { ...req.body };
     const merged = { ...student.toObject(), ...updatedData };
     const { percentage } = calculateProfileCompletion(merged);
@@ -322,7 +405,6 @@ exports.exportStudentsToExcel = async (req, res, next) => {
 
     const worksheet = workbook.addWorksheet('Master Students Directory');
 
-    // Define Header Columns
     worksheet.columns = [
       { header: 'Student ID', key: 'studentId', width: 15 },
       { header: 'Full Name', key: 'fullName', width: 25 },
@@ -340,20 +422,18 @@ exports.exportStudentsToExcel = async (req, res, next) => {
       { header: 'Package (LPA)', key: 'placedPackage', width: 16 }
     ];
 
-    // Style Header Row
     const headerRow = worksheet.getRow(1);
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FFFFFF' }, size: 11 };
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: '1E293B' } // Slate 800 dark header
+        fgColor: { argb: '1E293B' }
       };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
     headerRow.height = 24;
 
-    // Add Data Rows
     students.forEach((s) => {
       worksheet.addRow({
         studentId: s.studentId,
@@ -373,15 +453,8 @@ exports.exportStudentsToExcel = async (req, res, next) => {
       });
     });
 
-    // Set Response Headers for Downloadable .xlsx
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=TPO_Master_Students_${Date.now()}.xlsx`
-    );
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=TPO_Master_Students_${Date.now()}.xlsx`);
 
     await workbook.xlsx.write(res);
     res.status(200).end();
@@ -395,7 +468,7 @@ exports.exportStudentsToExcel = async (req, res, next) => {
 // @access  Private (Admin)
 exports.bulkVerifyStudents = async (req, res, next) => {
   try {
-    const { studentIds, action, note } = req.body; // action: 'approve' | 'reject'
+    const { studentIds, action, note } = req.body;
 
     if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({ success: false, message: 'Please provide array of student IDs' });

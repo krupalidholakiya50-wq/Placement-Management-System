@@ -15,8 +15,8 @@ import { Application } from '../../core/models/application.model';
       <!-- Header -->
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-          <h3 class="fw-bold text-slate-900 mb-1"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Stage 3: Application Pipeline & Recruitment Round Tracker</h3>
-          <p class="text-muted mb-0">Track application status, live timelines, candidate resume PDFs & recruitment rounds</p>
+          <h3 class="fw-bold text-slate-900 mb-1"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Stage 4: Multi-Round Interview Pipeline Tracker</h3>
+          <p class="text-muted mb-0">Advance candidate rounds: Applied ➔ Resume Shortlisted ➔ Aptitude ➔ GD ➔ Tech ➔ HR ➔ Offer</p>
         </div>
         <button
           *ngIf="userRole() !== 'student'"
@@ -29,7 +29,7 @@ import { Application } from '../../core/models/application.model';
         </button>
       </div>
 
-      <!-- STUDENT APPLICATIONS TIMELINE VIEW -->
+      <!-- STUDENT APPLICATIONS 7-ROUND VISUAL TIMELINE VIEW -->
       <ng-container *ngIf="userRole() === 'student'">
         <div class="row g-4 mb-4">
           <div *ngFor="let app of applications" class="col-12">
@@ -51,9 +51,9 @@ import { Application } from '../../core/models/application.model';
                 </div>
               </div>
 
-              <!-- LIVE APPLICATION TIMELINE STEPPER -->
+              <!-- EXACT 7-STAGE LIVE APPLICATION TIMELINE STEPPER -->
               <div class="mb-3">
-                <div class="text-slate-500 font-monospace small fw-bold mb-2">LIVE SELECTION PIPELINE TIMELINE</div>
+                <div class="text-slate-500 font-monospace small fw-bold mb-2"><i class="bi bi-clock-history me-1 text-primary"></i>STAGE 4: LIVE RECRUITMENT ROUND TRACKER</div>
                 
                 <div class="d-flex flex-wrap align-items-center gap-2">
                   <div [class]="getStepClass('Applied', app.status)">
@@ -61,35 +61,40 @@ import { Application } from '../../core/models/application.model';
                   </div>
                   <i class="bi bi-chevron-right text-muted"></i>
 
-                  <div [class]="getStepClass('Shortlisted', app.status)">
-                    <i class="bi bi-funnel-fill me-1"></i> 2. Shortlisted
+                  <div [class]="getStepClass('Resume Shortlisted', app.status)">
+                    <i class="bi bi-file-earmark-check me-1"></i> 2. Resume Shortlisted
                   </div>
                   <i class="bi bi-chevron-right text-muted"></i>
 
-                  <div [class]="getStepClass('Online Test', app.status)">
-                    <i class="bi bi-laptop me-1"></i> 3. Online Test
+                  <div [class]="getStepClass('Aptitude Test Cleared', app.status)">
+                    <i class="bi bi-laptop me-1"></i> 3. Aptitude Test
                   </div>
                   <i class="bi bi-chevron-right text-muted"></i>
 
-                  <div [class]="getStepClass('Tech Interview', app.status)">
-                    <i class="bi bi-code-slash me-1"></i> 4. Tech Round
+                  <div [class]="getStepClass('Group Discussion Cleared', app.status)">
+                    <i class="bi bi-people me-1"></i> 4. GD Round
                   </div>
                   <i class="bi bi-chevron-right text-muted"></i>
 
-                  <div [class]="getStepClass('HR Interview', app.status)">
-                    <i class="bi bi-people me-1"></i> 5. HR Round
+                  <div [class]="getStepClass('Technical Interview Cleared', app.status)">
+                    <i class="bi bi-code-slash me-1"></i> 5. Tech Interview
+                  </div>
+                  <i class="bi bi-chevron-right text-muted"></i>
+
+                  <div [class]="getStepClass('HR Interview Cleared', app.status)">
+                    <i class="bi bi-award-fill me-1"></i> 6. HR Cleared
                   </div>
                   <i class="bi bi-chevron-right text-muted"></i>
 
                   <div [class]="getStepClass('Selected', app.status)">
-                    <i class="bi bi-award-fill me-1"></i> 6. Offer / Placed
+                    <i class="bi bi-patch-check-fill me-1"></i> 7. Offer Released
                   </div>
                 </div>
               </div>
 
-              <!-- Status History Timeline Log -->
+              <!-- Status History Log -->
               <div *ngIf="app.statusTimeline && app.statusTimeline.length > 0" class="bg-slate-50 border rounded-12 p-3 small">
-                <div class="text-slate-700 font-monospace fw-bold mb-2"><i class="bi bi-clock-history me-1 text-primary"></i>TIMELINE LOGS</div>
+                <div class="text-slate-700 font-monospace fw-bold mb-2"><i class="bi bi-journal-text me-1 text-primary"></i>STAGE ROUND AUDIT LOGS</div>
                 <div *ngFor="let log of app.statusTimeline" class="d-flex justify-content-between border-bottom py-1">
                   <div><strong class="text-slate-900">{{ log.status }}</strong> — {{ log.note }}</div>
                   <span class="text-muted font-monospace">{{ log.updatedAt | date:'short' }}</span>
@@ -106,7 +111,7 @@ import { Application } from '../../core/models/application.model';
         </div>
       </ng-container>
 
-      <!-- ADMIN & RECRUITER APPLICANT MANAGEMENT TABLE -->
+      <!-- ADMIN & RECRUITER APPLICANT MANAGEMENT TABLE (STAGE 4 MULTI-ROUND CONTROLS) -->
       <ng-container *ngIf="userRole() !== 'student'">
         <!-- Filter Bar -->
         <div class="enterprise-card p-4 mb-4 bg-white">
@@ -114,23 +119,24 @@ import { Application } from '../../core/models/application.model';
             <div class="col-md-5">
               <div class="input-group">
                 <span class="input-group-text bg-white border-slate-300 text-muted"><i class="bi bi-search"></i></span>
-                <input type="text" [(ngModel)]="search" (ngModelChange)="loadApplications()" class="form-control border-slate-300" placeholder="Search applicant name, email, branch..." />
+                <input type="text" [(ngModel)]="search" (ngModelChange)="loadApplications()" class="form-control border-slate-300" placeholder="Search candidate name, email, branch..." />
               </div>
             </div>
             <div class="col-md-4">
               <select [(ngModel)]="filterStatus" (change)="loadApplications()" class="form-select border-slate-300">
                 <option value="">All Pipeline Stages</option>
-                <option value="Applied">Applied</option>
-                <option value="Shortlisted">Shortlisted</option>
-                <option value="Online Test">Online Test</option>
-                <option value="Tech Interview">Tech Interview</option>
-                <option value="HR Interview">HR Interview</option>
-                <option value="Selected">Selected / Offer</option>
+                <option value="Applied">1. Applied</option>
+                <option value="Resume Shortlisted">2. Resume Shortlisted</option>
+                <option value="Aptitude Test Cleared">3. Aptitude Test Cleared</option>
+                <option value="Group Discussion Cleared">4. GD Cleared</option>
+                <option value="Technical Interview Cleared">5. Tech Interview Cleared</option>
+                <option value="HR Interview Cleared">6. HR Interview Cleared</option>
+                <option value="Selected">7. Selected / Offer Released</option>
                 <option value="Rejected">Rejected</option>
               </select>
             </div>
             <div class="col-md-3">
-              <button class="btn btn-secondary w-100 rounded-pill" (click)="resetFilters()">Reset Applicant Filters</button>
+              <button class="btn btn-secondary w-100 rounded-pill" (click)="resetFilters()">Reset Candidate Filters</button>
             </div>
           </div>
         </div>
@@ -139,7 +145,7 @@ import { Application } from '../../core/models/application.model';
         <div class="enterprise-card p-4 bg-white">
           <div *ngIf="isLoading" class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
-            <p class="text-muted mt-2">Loading candidate pipeline...</p>
+            <p class="text-muted mt-2">Loading interview pipeline table...</p>
           </div>
 
           <div *ngIf="!isLoading" class="table-responsive">
@@ -147,11 +153,11 @@ import { Application } from '../../core/models/application.model';
               <thead class="bg-light sticky-top">
                 <tr class="text-muted border-bottom small text-uppercase font-monospace">
                   <th>Candidate Student</th>
-                  <th>Drive & Company</th>
+                  <th>Drive Position</th>
                   <th>Branch & CGPA</th>
                   <th>Resume PDF</th>
-                  <th>Pipeline Status</th>
-                  <th class="text-end">Recruiter Control</th>
+                  <th>Current Round Status</th>
+                  <th class="text-end">Sequential Stage Advance</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,7 +168,7 @@ import { Application } from '../../core/models/application.model';
                   </td>
                   <td>
                     <div class="fw-bold text-slate-900">{{ app.job?.title || 'Drive Position' }}</div>
-                    <small class="text-primary fw-semibold">{{ app.job?.companyName || 'Partner' }}</small>
+                    <small class="text-primary fw-semibold">{{ app.job?.companyName || 'Partner Corp' }}</small>
                   </td>
                   <td>
                     <div class="text-slate-800 font-semibold">{{ app.branch || 'B.Tech CSE' }}</div>
@@ -179,18 +185,19 @@ import { Application } from '../../core/models/application.model';
                     </span>
                   </td>
                   <td class="text-end">
-                    <!-- Status Dropdown Menu -->
+                    <!-- EXACT 7-STAGE PIPELINE TRANSITION DROPDOWN -->
                     <div class="dropdown d-inline-block">
                       <button class="btn btn-sm btn-primary rounded-pill px-3 dropdown-toggle font-monospace fw-bold" type="button" data-bs-toggle="dropdown">
-                        Advance Round
+                        Advance Round ➔
                       </button>
                       <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'Shortlisted')"><i class="bi bi-funnel text-primary me-2"></i>Shortlist Candidate</a></li>
-                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'Online Test')"><i class="bi bi-laptop text-info me-2"></i>Move to Online Test</a></li>
-                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'Tech Interview')"><i class="bi bi-code-slash text-warning me-2"></i>Move to Tech Round</a></li>
-                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'HR Interview')"><i class="bi bi-people text-secondary me-2"></i>Move to HR Round</a></li>
+                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'Resume Shortlisted')"><i class="bi bi-file-earmark-check text-primary me-2"></i>2. Resume Shortlisted</a></li>
+                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'Aptitude Test Cleared')"><i class="bi bi-laptop text-info me-2"></i>3. Aptitude Test Cleared</a></li>
+                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'Group Discussion Cleared')"><i class="bi bi-people text-warning me-2"></i>4. GD Cleared</a></li>
+                        <li><a class="dropdown-item small" (click)="updateStatus(app._id!, 'Technical Interview Cleared')"><i class="bi bi-code-slash text-indigo me-2"></i>5. Technical Round Cleared</a></li>
+                        <li><a class="dropdown-item small text-success fw-bold" (click)="updateStatus(app._id!, 'HR Interview Cleared')"><i class="bi bi-award text-success me-2"></i>6. HR Interview Cleared (Gen Offer)</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item small text-success fw-bold" (click)="updateStatus(app._id!, 'Selected')"><i class="bi bi-award text-success me-2"></i>Select / Offer Placed</a></li>
+                        <li><a class="dropdown-item small text-success fw-bold" (click)="updateStatus(app._id!, 'Selected')"><i class="bi bi-patch-check text-success me-2"></i>7. Final Offer / Selected</a></li>
                         <li><a class="dropdown-item small text-danger fw-bold" (click)="updateStatus(app._id!, 'Rejected')"><i class="bi bi-x-circle text-danger me-2"></i>Reject Candidate</a></li>
                       </ul>
                     </div>
@@ -200,7 +207,7 @@ import { Application } from '../../core/models/application.model';
                 <tr *ngIf="applications.length === 0">
                   <td colspan="6" class="text-center py-5 text-muted">
                     <i class="bi bi-inbox fs-1 d-block mb-2 text-slate-300"></i>
-                    No candidates match the specified filter.
+                    No candidates match the specified pipeline filter.
                   </td>
                 </tr>
               </tbody>
@@ -237,7 +244,7 @@ export class ApplicationsComponent implements OnInit {
       branch: 'B.Tech CSE',
       cgpa: 9.1,
       resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      status: 'Selected',
+      status: 'HR Interview Cleared',
       job: {
         _id: 'job_google_1',
         title: 'Software Development Engineer',
@@ -246,10 +253,11 @@ export class ApplicationsComponent implements OnInit {
         jobType: 'Full Time'
       } as any,
       statusTimeline: [
-        { status: 'Applied', note: 'Application submitted via Campus Job Portal.' },
-        { status: 'Shortlisted', note: 'Shortlisted for online coding round.' },
-        { status: 'Tech Interview', note: 'Cleared System Design & DSA interview.' },
-        { status: 'Selected', note: 'Offer released for 28.5 LPA!' }
+        { status: 'Applied', note: 'Application registered via Portal.' },
+        { status: 'Resume Shortlisted', note: 'Resume cleared by Google HR.' },
+        { status: 'Aptitude Test Cleared', note: 'Cleared Online Assessment.' },
+        { status: 'Technical Interview Cleared', note: 'Cleared System Design round.' },
+        { status: 'HR Interview Cleared', note: 'HR Cleared! LOI Offer generated.' }
       ] as any,
       createdAt: new Date()
     },
@@ -261,7 +269,7 @@ export class ApplicationsComponent implements OnInit {
       branch: 'B.Tech IT',
       cgpa: 8.8,
       resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      status: 'Tech Interview',
+      status: 'Technical Interview Cleared',
       job: {
         _id: 'job_msft_1',
         title: 'Cloud Solutions Architect',
@@ -270,31 +278,9 @@ export class ApplicationsComponent implements OnInit {
         jobType: 'Full Time'
       } as any,
       statusTimeline: [
-        { status: 'Applied', note: 'Applied for Microsoft IDC drive.' },
-        { status: 'Shortlisted', note: 'Shortlisted based on CGPA 8.8.' },
-        { status: 'Tech Interview', note: 'Scheduled for Technical Round 2.' }
-      ] as any,
-      createdAt: new Date()
-    },
-    {
-      _id: 'app_demo_3',
-      studentName: 'Rohan Mehta',
-      studentEmail: 'rohan.mehta@student.edu',
-      department: 'Electronics',
-      branch: 'B.Tech ECE',
-      cgpa: 7.9,
-      resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      status: 'Online Test',
-      job: {
-        _id: 'job_aws_1',
-        title: 'DevOps & Backend Engineer',
-        companyName: 'Amazon Web Services',
-        salaryPackage: 18.5,
-        jobType: 'Internship + Full Time'
-      } as any,
-      statusTimeline: [
-        { status: 'Applied', note: 'Application registered.' },
-        { status: 'Online Test', note: 'Coding assessment link sent.' }
+        { status: 'Applied', note: 'Applied for drive.' },
+        { status: 'Resume Shortlisted', note: 'Shortlisted based on CGPA 8.8.' },
+        { status: 'Technical Interview Cleared', note: 'Cleared Technical Round 2.' }
       ] as any,
       createdAt: new Date()
     }
@@ -352,11 +338,12 @@ export class ApplicationsComponent implements OnInit {
 
   getPipelineStatusBadge(status: string): string {
     switch (status) {
-      case 'Selected': return 'badge bg-success text-white rounded-pill px-3 py-1 font-monospace';
-      case 'Tech Interview':
-      case 'HR Interview': return 'badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace';
-      case 'Shortlisted':
-      case 'Online Test': return 'badge bg-info text-white rounded-pill px-3 py-1 font-monospace';
+      case 'Selected':
+      case 'HR Interview Cleared': return 'badge bg-success text-white rounded-pill px-3 py-1 font-monospace';
+      case 'Technical Interview Cleared':
+      case 'Group Discussion Cleared': return 'badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace';
+      case 'Aptitude Test Cleared':
+      case 'Resume Shortlisted': return 'badge bg-info text-white rounded-pill px-3 py-1 font-monospace';
       case 'Rejected': return 'badge bg-danger text-white rounded-pill px-3 py-1 font-monospace';
       default: return 'badge bg-primary text-white rounded-pill px-3 py-1 font-monospace';
     }
@@ -364,18 +351,27 @@ export class ApplicationsComponent implements OnInit {
 
   getPipelineStatusIcon(status: string): string {
     switch (status) {
-      case 'Selected': return 'bi-award-fill';
-      case 'Tech Interview': return 'bi-code-slash';
-      case 'HR Interview': return 'bi-people-fill';
-      case 'Shortlisted': return 'bi-funnel-fill';
-      case 'Online Test': return 'bi-laptop';
+      case 'Selected':
+      case 'HR Interview Cleared': return 'bi-award-fill';
+      case 'Technical Interview Cleared': return 'bi-code-slash';
+      case 'Group Discussion Cleared': return 'bi-people-fill';
+      case 'Aptitude Test Cleared': return 'bi-laptop';
+      case 'Resume Shortlisted': return 'bi-file-earmark-check';
       case 'Rejected': return 'bi-x-circle-fill';
       default: return 'bi-send-fill';
     }
   }
 
   getStepClass(stepName: string, currentStatus: string): string {
-    const pipelineOrder = ['Applied', 'Shortlisted', 'Online Test', 'Tech Interview', 'HR Interview', 'Selected'];
+    const pipelineOrder = [
+      'Applied',
+      'Resume Shortlisted',
+      'Aptitude Test Cleared',
+      'Group Discussion Cleared',
+      'Technical Interview Cleared',
+      'HR Interview Cleared',
+      'Selected'
+    ];
     const currentIndex = pipelineOrder.indexOf(currentStatus);
     const stepIndex = pipelineOrder.indexOf(stepName);
 

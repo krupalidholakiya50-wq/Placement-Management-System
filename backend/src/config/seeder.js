@@ -3,6 +3,8 @@ const Student = require('../models/Student');
 const Company = require('../models/Company');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
+const Notice = require('../models/Notice');
+
 
 const seedData = async () => {
   try {
@@ -283,7 +285,63 @@ const seedData = async () => {
       }
     ]);
 
+    // 6. Create Default Notices & Email Broadcasts
+    await Notice.insertMany([
+      {
+        title: '📢 Urgent: Google India Technical Interview Schedule Released',
+        category: 'Interview Schedule',
+        companyName: 'Google India',
+        role: 'Full Stack Software Engineer',
+        packageOffered: '28.5 LPA',
+        eligibilityCriteria: 'Shortlisted CSE & IT Students (CGPA >= 8.5)',
+        targetBranch: 'B.Tech CSE, IT',
+        priority: 'Urgent',
+        content: 'Dear Candidates, The technical interview rounds for Google India Software Engineer drive are scheduled for tomorrow starting 09:30 AM in Lab 302. Please ensure your college ID and updated resume are ready. Meeting links have also been dispatched to your registered email IDs.',
+        isEmailSent: true,
+        postedBy: adminUser._id,
+        alertLogs: [
+          { channel: 'Student Portal Dashboard', recipientCount: 45, status: 'Published' },
+          { channel: 'SMTP Email Broadcast', recipientCount: 45, status: 'Delivered' }
+        ]
+      },
+      {
+        title: '🚀 Microsoft IDC Campus Recruitment Drive Announcement',
+        category: 'Campus Drive',
+        companyName: 'Microsoft IDC',
+        role: 'Cloud Solutions Architect',
+        packageOffered: '24.0 LPA',
+        eligibilityCriteria: 'CGPA >= 8.0 across CSE, IT & ECE',
+        targetBranch: 'All Branches',
+        priority: 'High',
+        content: 'Microsoft IDC has published a new campus placement drive for Cloud Solutions Architect position (24.0 LPA). Last date to submit applications on the portal is September 15. Make sure your profile & documents are verified by TPO Cell.',
+        isEmailSent: true,
+        postedBy: adminUser._id,
+        alertLogs: [
+          { channel: 'Student Portal Dashboard', recipientCount: 380, status: 'Published' },
+          { channel: 'SMTP Email Broadcast', recipientCount: 380, status: 'Delivered' }
+        ]
+      },
+      {
+        title: '📋 TPO Mandatory Resume & Document Verification Deadline',
+        category: 'General Notice',
+        companyName: 'University T&P Cell',
+        role: 'All Batch 2026 Students',
+        packageOffered: 'N/A',
+        eligibilityCriteria: 'All 4th Year B.Tech Students',
+        targetBranch: 'All Branches',
+        priority: 'Normal',
+        content: 'All 2026 batch unplaced students are required to upload their latest PDF resumes and transcript files on the portal before Friday 5:00 PM to maintain eligibility for upcoming Tier-1 recruiter drives.',
+        isEmailSent: true,
+        postedBy: adminUser._id,
+        alertLogs: [
+          { channel: 'Student Portal Dashboard', recipientCount: 450, status: 'Published' },
+          { channel: 'SMTP Email Broadcast', recipientCount: 450, status: 'Delivered' }
+        ]
+      }
+    ]);
+
     console.log('✅ Auto-seeding completed successfully!');
+
   } catch (error) {
     console.error('❌ Error during auto-seeding:', error.message);
   }

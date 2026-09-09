@@ -1,171 +1,535 @@
 import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
-    <aside [class]="'sidebar-wrapper p-3 d-flex flex-column h-100 ' + (isCollapsed ? 'collapsed' : '')">
-      <!-- Role Badge Header -->
-      <div *ngIf="!isCollapsed" class="px-3 py-2 mb-3 bg-slate-800 bg-opacity-60 rounded-12 border border-slate-700">
-        <small class="text-primary font-monospace fw-bold text-uppercase d-block" style="font-size: 0.65rem;">
-          {{ userRole() }} WORKSPACE
-        </small>
-        <span class="text-white fw-bold fs-6">{{ user()?.name || 'TPO User' }}</span>
+    <aside class="sidebar-inner d-flex flex-column h-100">
+      <!-- Brand Header -->
+      <div class="sidebar-brand-header">
+        <a routerLink="/dashboard" class="brand-link">
+          <div class="brand-logo-icon">
+            <i class="bi bi-mortarboard-fill"></i>
+          </div>
+          <div class="brand-text-block">
+            <span class="brand-title">Placement<span class="brand-highlight">Pro</span></span>
+            <span class="brand-subtitle">CAMPUS T&P CELL</span>
+          </div>
+        </a>
+        <div class="status-indicator-badge">
+          <span class="status-dot"></span>
+          <span>LIVE</span>
+        </div>
       </div>
 
-      <!-- Navigation Links Grouped by Section -->
-      <ul class="nav nav-pills flex-column mb-auto gap-1">
-        <li *ngIf="!isCollapsed" class="nav-header text-slate-500 font-monospace fw-bold text-uppercase px-3 pt-2 pb-1" style="font-size: 0.65rem;">
-          CORE WORKSPACE
-        </li>
-        <li class="nav-item">
-          <a routerLink="/dashboard" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Dashboard' : ''">
-            <i class="bi bi-grid-1x2-fill fs-5 me-3"></i>
-            <span *ngIf="!isCollapsed" class="fw-semibold">Dashboard</span>
-          </a>
-        </li>
+      <!-- Quick Session Badge -->
+      <div class="px-3 pt-3">
+        <div class="session-node-card">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="node-title"><i class="bi bi-shield-check me-1"></i> {{ getRoleBadge() }}</span>
+            <span class="badge bg-primary bg-opacity-25 text-primary-light font-mono" style="font-size: 0.6rem;">AY 2025-26</span>
+          </div>
+          <div class="node-subtitle mt-1">Verified Session Active</div>
+        </div>
+      </div>
 
-        <!-- Student Navigation -->
-        <ng-container *ngIf="userRole() === 'student'">
-          <li *ngIf="!isCollapsed" class="nav-header text-slate-500 font-monospace fw-bold text-uppercase px-3 pt-3 pb-1" style="font-size: 0.65rem;">
-            MY PROFILE & DRIVES
-          </li>
-          <li class="nav-item">
-            <a routerLink="/profile" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Profile & Documents' : ''">
-              <i class="bi bi-file-earmark-person-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Profile & Documents</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/jobs" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Campus Drives' : ''">
-              <i class="bi bi-building-check fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Campus Drives</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/applications" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'My Applications' : ''">
-              <i class="bi bi-file-earmark-check-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">My Applications</span>
-            </a>
-          </li>
-        </ng-container>
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav-container flex-grow-1">
+        <div class="nav-section-label">MAIN RECRUITMENT HUB</div>
 
-        <!-- Recruiter Navigation -->
-        <ng-container *ngIf="userRole() === 'company'">
-          <li *ngIf="!isCollapsed" class="nav-header text-slate-500 font-monospace fw-bold text-uppercase px-3 pt-3 pb-1" style="font-size: 0.65rem;">
-            RECRUITMENT OPERATIONS
-          </li>
-          <li class="nav-item">
-            <a routerLink="/jobs" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Manage Drives' : ''">
-              <i class="bi bi-briefcase-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Manage Drives</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/applications" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Applicants' : ''">
-              <i class="bi bi-people-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Applicants</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/companies" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Company Profile' : ''">
-              <i class="bi bi-building fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Company Profile</span>
-            </a>
-          </li>
-        </ng-container>
+        <!-- Dashboard -->
+        <a routerLink="/dashboard" routerLinkActive="active" class="sidebar-nav-item">
+          <div class="nav-item-content">
+            <div class="nav-icon-wrapper cyan">
+              <i class="bi bi-grid-1x2-fill"></i>
+            </div>
+            <span class="nav-label">Dashboard Telemetry</span>
+          </div>
+          <i class="bi bi-chevron-right nav-arrow"></i>
+        </a>
 
-        <!-- Admin Only Navigation -->
+        <!-- Notices / Mailbox -->
+        <a routerLink="/notices" routerLinkActive="active" class="sidebar-nav-item">
+          <div class="nav-item-content">
+            <div class="nav-icon-wrapper amber">
+              <i class="bi bi-bell-fill"></i>
+            </div>
+            <span class="nav-label">Notices & Alerts</span>
+          </div>
+          <span class="nav-badge-alert">3 New</span>
+        </a>
+
+        <!-- ADMIN Role Navigation -->
         <ng-container *ngIf="userRole() === 'admin'">
-          <li *ngIf="!isCollapsed" class="nav-header text-slate-500 font-monospace fw-bold text-uppercase px-3 pt-3 pb-1" style="font-size: 0.65rem;">
-            OPERATIONS
-          </li>
-          <li class="nav-item">
-            <a routerLink="/students" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Students Directory' : ''">
-              <i class="bi bi-people-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Students Directory</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/companies" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Companies Directory' : ''">
-              <i class="bi bi-building-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Companies Directory</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/jobs" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Placement Drives' : ''">
-              <i class="bi bi-card-heading fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Placement Drives</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/applications" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Interview Pipeline' : ''">
-              <i class="bi bi-diagram-3-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Interview Pipeline</span>
-            </a>
-          </li>
+          <div class="nav-section-label mt-3">ADMINISTRATION</div>
 
-          <li *ngIf="!isCollapsed" class="nav-header text-slate-500 font-monospace fw-bold text-uppercase px-3 pt-3 pb-1" style="font-size: 0.65rem;">
-            ANALYTICS & CONFIG
-          </li>
-          <li class="nav-item">
-            <a routerLink="/reports" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Analytics & Reports' : ''">
-              <i class="bi bi-bar-chart-line-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Analytics & Reports</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a routerLink="/settings" routerLinkActive="active" class="nav-link d-flex align-items-center" [title]="isCollapsed ? 'Portal Settings' : ''">
-              <i class="bi bi-gear-fill fs-5 me-3"></i>
-              <span *ngIf="!isCollapsed" class="fw-semibold">Portal Settings</span>
-            </a>
-          </li>
+          <a routerLink="/students" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper purple">
+                <i class="bi bi-people-fill"></i>
+              </div>
+              <span class="nav-label">Student Directory</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/companies" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper emerald">
+                <i class="bi bi-building-fill-check"></i>
+              </div>
+              <span class="nav-label">Corporate Partners</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/jobs" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper indigo">
+                <i class="bi bi-briefcase-fill"></i>
+              </div>
+              <span class="nav-label">Placement Drives (JNF)</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/applications" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper pink">
+                <i class="bi bi-kanban-fill"></i>
+              </div>
+              <span class="nav-label">ATS Telemetry Matrix</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/reports" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper cyan">
+                <i class="bi bi-bar-chart-line-fill"></i>
+              </div>
+              <span class="nav-label">Placement Reports</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
         </ng-container>
-      </ul>
 
-      <!-- User Profile Footer -->
-      <div *ngIf="!isCollapsed" class="p-3 bg-slate-900 border border-slate-800 rounded-12 mt-4">
-        <small class="text-slate-400 font-monospace d-block mb-1" style="font-size: 0.65rem;">UNIVERSITY CELL</small>
-        <div class="fw-bold text-white small">Placement Office v2026</div>
+        <!-- STUDENT Role Navigation -->
+        <ng-container *ngIf="userRole() === 'student'">
+          <div class="nav-section-label mt-3">STUDENT PORTAL</div>
+
+          <a routerLink="/profile" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper indigo">
+                <i class="bi bi-person-badge-fill"></i>
+              </div>
+              <span class="nav-label">My Verified Profile</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/jobs" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper emerald">
+                <i class="bi bi-building-check"></i>
+              </div>
+              <span class="nav-label">Campus Job Drives</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/applications" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper purple">
+                <i class="bi bi-diagram-3-fill"></i>
+              </div>
+              <span class="nav-label">Application Tracker</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+        </ng-container>
+
+        <!-- COMPANY Role Navigation -->
+        <ng-container *ngIf="userRole() === 'company'">
+          <div class="nav-section-label mt-3">RECRUITER WORKSPACE</div>
+
+          <a routerLink="/jobs" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper indigo">
+                <i class="bi bi-file-earmark-plus-fill"></i>
+              </div>
+              <span class="nav-label">Post & Manage JNFs</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/applications" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper emerald">
+                <i class="bi bi-person-lines-fill"></i>
+              </div>
+              <span class="nav-label">Candidate Pipeline</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+
+          <a routerLink="/companies" routerLinkActive="active" class="sidebar-nav-item">
+            <div class="nav-item-content">
+              <div class="nav-icon-wrapper cyan">
+                <i class="bi bi-buildings-fill"></i>
+              </div>
+              <span class="nav-label">Company Profile</span>
+            </div>
+            <i class="bi bi-chevron-right nav-arrow"></i>
+          </a>
+        </ng-container>
+
+        <div class="nav-section-label mt-3">SYSTEM</div>
+        <a routerLink="/settings" routerLinkActive="active" class="sidebar-nav-item">
+          <div class="nav-item-content">
+            <div class="nav-icon-wrapper slate">
+              <i class="bi bi-gear-fill"></i>
+            </div>
+            <span class="nav-label">Portal Settings</span>
+          </div>
+          <i class="bi bi-chevron-right nav-arrow"></i>
+        </a>
+      </nav>
+
+      <!-- Bottom Mini Telemetry & User Card -->
+      <div class="sidebar-footer">
+        <!-- Placement Progress Pill -->
+        <div class="placement-progress-box">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="progress-title">Batch Placement Ratio</span>
+            <span class="progress-pct">82.5%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width: 82.5%;"></div>
+          </div>
+        </div>
+
+        <!-- User Profile Card -->
+        <div class="user-profile-tile">
+          <img [src]="getUserPhoto()" class="user-avatar" alt="Avatar" />
+          <div class="user-details">
+            <span class="user-name">{{ user()?.name || 'Dr. Placement Officer' }}</span>
+            <span class="user-role">{{ getRoleTitle() }}</span>
+          </div>
+          <button (click)="onLogout()" class="logout-btn" title="Sign Out">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </div>
       </div>
     </aside>
   `,
   styles: [`
-    .sidebar-wrapper {
-      background-color: #0f172a;
-      width: 260px;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    .sidebar-inner {
+      background: #090d16;
+      color: #cbd5e1;
+      height: 100%;
     }
-    .sidebar-wrapper.collapsed {
-      width: 76px;
+    .sidebar-brand-header {
+      padding: 20px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
     }
-    .nav-link {
-      color: #94a3b8;
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-logo-icon {
+      width: 38px;
+      height: 38px;
       border-radius: 12px;
-      padding: 10px 16px;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-    }
-    .nav-link:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
       color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
     }
-    .nav-link.active {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      display: block;
+    }
+    .brand-highlight {
+      color: #38bdf8;
+      margin-left: 2px;
+    }
+    .brand-subtitle {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #818cf8;
+      letter-spacing: 0.8px;
+      font-family: 'JetBrains Mono', monospace;
+      display: block;
+      margin-top: 3px;
+    }
+    .status-indicator-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #10b981;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+    .session-node-card {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .node-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .node-subtitle {
+      font-size: 0.7rem;
+      color: #94a3b8;
+    }
+    .sidebar-nav-container {
+      padding: 16px 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .nav-section-label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #475569;
+      letter-spacing: 0.8px;
+      padding: 6px 12px 4px 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .sidebar-nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: 10px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sidebar-nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+    .sidebar-nav-item.active {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.3) 0%, rgba(99, 102, 241, 0.15) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.4);
       color: #ffffff !important;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-      border-left: 4px solid #60a5fa;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.15);
+    }
+    .sidebar-nav-item.active .nav-arrow {
+      color: #818cf8;
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .nav-item-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-icon-wrapper {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      transition: all 0.2s ease;
+    }
+    .nav-icon-wrapper.cyan { color: #38bdf8; }
+    .nav-icon-wrapper.amber { color: #fbbf24; }
+    .nav-icon-wrapper.purple { color: #c084fc; }
+    .nav-icon-wrapper.emerald { color: #34d399; }
+    .nav-icon-wrapper.indigo { color: #818cf8; }
+    .nav-icon-wrapper.pink { color: #f472b6; }
+    .nav-icon-wrapper.slate { color: #94a3b8; }
+    .nav-arrow {
+      font-size: 0.75rem;
+      color: #64748b;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: all 0.2s ease;
+    }
+    .sidebar-nav-item:hover .nav-arrow {
+      opacity: 0.7;
+      transform: translateX(0);
+    }
+    .nav-badge-alert {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    }
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      background: #060910;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .placement-progress-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .progress-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .progress-pct {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .progress-bar-track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8 0%, #6366f1 100%);
+      border-radius: 9999px;
+    }
+    .user-profile-tile {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(99, 102, 241, 0.5);
+    }
+    .user-details {
+      flex-grow: 1;
+      min-width: 0;
+    }
+    .user-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+    .user-role {
+      font-size: 0.65rem;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      display: block;
+    }
+    .logout-btn {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .logout-btn:hover {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
     }
   `]
 })
 export class SidebarComponent {
   @Input() isCollapsed: boolean = false;
 
+  private router = inject(Router);
   authService = inject(AuthService);
+  notify = inject(NotificationService);
+
   user = this.authService.currentUser;
   userRole = () => this.authService.getUserRole() || 'student';
+
+  getRoleBadge(): string {
+    const role = this.userRole();
+    if (role === 'admin') return 'T&P SuperAdmin';
+    if (role === 'company') return 'Corporate Partner';
+    return 'Registered Student';
+  }
+
+  getRoleTitle(): string {
+    const role = this.userRole();
+    if (role === 'admin') return 'Administrator';
+    if (role === 'company') return 'HR Recruiter';
+    return 'Candidate';
+  }
+
+  getUserPhoto(): string {
+    const u = this.user();
+    if (u && (u as any).photoUrl) return (u as any).photoUrl;
+    return 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80';
+  }
+
+  onLogout(): void {
+    this.authService.logout();
+    this.notify.showSuccess('Signed out of account workspace.');
+    this.router.navigate(['/login']);
+  }
 }

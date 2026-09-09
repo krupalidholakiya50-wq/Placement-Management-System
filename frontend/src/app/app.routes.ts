@@ -9,6 +9,7 @@ import { ApplicationsComponent } from './components/applications/applications.co
 import { ReportsComponent } from './components/reports/reports.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { SettingsComponent } from './components/settings/settings.component';
+import { NoticesComponent } from './components/notices/notices.component';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { AppLayoutComponent } from './layout/app-layout/app-layout.component';
 import { authGuard } from './core/guards/auth.guard';
@@ -29,9 +30,11 @@ export const routes: Routes = [
       { path: 'applications', component: ApplicationsComponent },
       { path: 'reports', component: ReportsComponent },
       { path: 'profile', component: ProfileComponent },
-      { path: 'settings', component: SettingsComponent }
+      { path: 'settings', component: SettingsComponent },
+      { path: 'notices', component: NoticesComponent }
     ]
   },
   { path: '404', component: NotFoundComponent },
   { path: '**', redirectTo: '404' }
 ];
+

@@ -12,6 +12,12 @@ export class StudentService {
 
   constructor(private http: HttpClient) {}
 
+  uploadResume(file: File): Observable<{ success: boolean; message: string; fileUrl: string }> {
+    const formData = new FormData();
+    formData.append('resume', file);
+    return this.http.post<{ success: boolean; message: string; fileUrl: string }>(`${this.apiUrl}/upload-resume`, formData);
+  }
+
   getStudents(filters: any = {}): Observable<{ success: boolean; count: number; data: Student[] }> {
     let params = new HttpParams();
     Object.keys(filters).forEach((key) => {

@@ -1,6 +1,7 @@
 const Application = require('../models/Application');
 const Job = require('../models/Job');
 const Student = require('../models/Student');
+const Offer = require('../models/Offer');
 const ExcelJS = require('exceljs');
 
 // @desc    STAGE 3: Apply for job drive with backend eligibility re-validation & DUPLICATE GUARD
@@ -54,14 +55,14 @@ exports.applyForJob = async (req, res, next) => {
     if (student.cgpa < job.minCgpa) {
       return res.status(403).json({
         success: false,
-        message: `Minimum required CGPA is ${job.minCgpa}. Your current CGPA is ${student.cgpa}.`
+        message: `Not Eligible: Minimum required CGPA is ${job.minCgpa}. Your current CGPA is ${student.cgpa}.`
       });
     }
 
     if (student.backlogs > job.maxBacklogs) {
       return res.status(403).json({
         success: false,
-        message: `Maximum allowed backlogs is ${job.maxBacklogs}. You currently have ${student.backlogs} backlogs.`
+        message: `Not Eligible: Maximum allowed backlogs is ${job.maxBacklogs}. You currently have ${student.backlogs} backlogs.`
       });
     }
 
@@ -73,7 +74,7 @@ exports.applyForJob = async (req, res, next) => {
       if (newPackage <= 2 * currentPackage) {
         return res.status(403).json({
           success: false,
-          message: `Auto-Debar Policy: You are placed at ${currentPackage} LPA. You can only apply to Dream Offers offering > 2x package (> ${(2 * currentPackage).toFixed(1)} LPA).`
+          message: `One-Student-One-Job Lock: You are already placed at ${currentPackage} LPA. You can only apply to Dream Offers (> ${(2 * currentPackage).toFixed(1)} LPA).`
         });
       }
     }
@@ -93,7 +94,7 @@ exports.applyForJob = async (req, res, next) => {
       statusTimeline: [
         {
           status: 'Applied',
-          note: 'Application submitted by candidate via Campus Job Portal.'
+          note: 'Application registered via Campus Job Portal.'
         }
       ]
     });
@@ -171,12 +172,13 @@ exports.getApplications = async (req, res, next) => {
   }
 };
 
-// @desc    STAGE 3 & 4: Advance candidate status in application pipeline timeline
+// @desc    STAGE 4 & 5: Advance candidate status in 7-stage interview pipeline & generate Offer LOI on HR Clear / Selected
 // @route   PUT /api/applications/:id/status
 // @access  Private (Admin / Company)
 exports.updateApplicationStatus = async (req, res, next) => {
   try {
-    const { status, note } = req.body; // status: 'Applied' | 'Shortlisted' | 'Online Test' | 'Tech Interview' | 'HR Interview' | 'Selected' | 'Rejected' | 'No Show'
+    const { status, note } = req.body; 
+    // status options: 'Applied' | 'Resume Shortlisted' | 'Aptitude Test Cleared' | 'Group Discussion Cleared' | 'Technical Interview Cleared' | 'HR Interview Cleared' | 'Selected' | 'Rejected'
 
     const application = await Application.findById(req.params.id).populate('student').populate('job');
     if (!application) {
@@ -186,32 +188,33 @@ exports.updateApplicationStatus = async (req, res, next) => {
     application.status = status;
     application.statusTimeline.push({
       status,
-      note: note || `Candidate advanced to '${status}' stage by Recruiter / TPO.`
+      note: note || `Candidate advanced to '${status}' round by Recruiter / TPO.`
     });
 
     await application.save();
 
-    // If candidate gets Selected, update Student placementStatus
-    if (status === 'Selected' && application.student) {
-      const student = await Student.findById(application.student._id);
-      if (student) {
-        student.placementStatus = 'Placed';
-        student.placedCompany = application.job ? application.job.companyName : 'Partner Corp';
-        student.placedPackage = application.job ? application.job.salaryPackage : 12.0;
-        await student.save();
-      }
-    } else if (status === 'No Show' && application.student) {
-      const student = await Student.findById(application.student._id);
-      if (student) {
-        student.placementStatus = 'Blacklisted';
-        student.blacklistedUntilDrives = 3;
-        await student.save();
+    // STAGE 5: AUTO GENERATE OFFER LETTER / LOI WHEN HR INTERVIEW CLEARED OR SELECTED
+    if ((status === 'Selected' || status === 'HR Interview Cleared') && application.student && application.job) {
+      const existingOffer = await Offer.findOne({ application: application._id });
+      if (!existingOffer) {
+        await Offer.create({
+          application: application._id,
+          job: application.job._id,
+          student: application.student._id,
+          studentName: application.studentName,
+          companyName: application.job.companyName,
+          role: application.job.title,
+          packageOffered: application.job.salaryPackage || 12.0,
+          location: application.job.location || 'Bangalore',
+          loiText: `OFFICIAL LETTER OF INTENT (LOI)\nDear ${application.studentName},\nWe are pleased to offer you the position of ${application.job.title} at ${application.job.companyName} with an annual CTC package of ${application.job.salaryPackage} LPA. Please accept this LOI on your student dashboard to confirm your joining.`,
+          status: 'Pending'
+        });
       }
     }
 
     res.status(200).json({
       success: true,
-      message: `Candidate status updated to '${status}'`,
+      message: `Candidate pipeline status updated to '${status}'`,
       data: application
     });
   } catch (error) {
@@ -219,29 +222,7 @@ exports.updateApplicationStatus = async (req, res, next) => {
   }
 };
 
-// @desc    Get single application by ID
-// @route   GET /api/applications/:id
-// @access  Private
-exports.getApplicationById = async (req, res, next) => {
-  try {
-    const application = await Application.findById(req.params.id)
-      .populate('job')
-      .populate('student');
-
-    if (!application) {
-      return res.status(404).json({ success: false, message: 'Application record not found' });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: application
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    STAGE 3: Export Drive Applicant Shortlist to Excel (.xlsx) for Corporate Recruiters
+// @desc    Export Drive Applicant Shortlist to Excel (.xlsx)
 // @route   GET /api/applications/export-excel
 // @access  Private (Admin / Company)
 exports.exportApplicantsToExcel = async (req, res, next) => {
@@ -274,24 +255,22 @@ exports.exportApplicantsToExcel = async (req, res, next) => {
       { header: 'Resume URL', key: 'resumeUrl', width: 45 },
       { header: 'Job Title', key: 'jobTitle', width: 25 },
       { header: 'Company', key: 'companyName', width: 22 },
-      { header: 'Current Round Status', key: 'status', width: 20 },
+      { header: 'Pipeline Status', key: 'status', width: 22 },
       { header: 'Application Date', key: 'appliedAt', width: 18 }
     ];
 
-    // Style Header Row
     const headerRow = worksheet.getRow(1);
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FFFFFF' }, size: 11 };
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: '0F172A' } // Deep Navy Header
+        fgColor: { argb: '0F172A' }
       };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
     headerRow.height = 24;
 
-    // Add Data
     applications.forEach((app) => {
       worksheet.addRow({
         studentName: app.studentName,
@@ -308,14 +287,8 @@ exports.exportApplicantsToExcel = async (req, res, next) => {
       });
     });
 
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=Candidate_Shortlist_${jobInfo.replace(/\s+/g, '_')}_${Date.now()}.xlsx`
-    );
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Candidate_Shortlist_${jobInfo.replace(/\s+/g, '_')}_${Date.now()}.xlsx`);
 
     await workbook.xlsx.write(res);
     res.status(200).end();

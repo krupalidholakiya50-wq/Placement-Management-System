@@ -1,8 +1,10 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ReportService } from '../../core/services/report.service';
+import { StudentService } from '../../core/services/student.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -203,14 +205,14 @@ import { NotificationService } from '../../core/services/notification.service';
 
       <!-- Bottom Mini Telemetry & User Card -->
       <div class="sidebar-footer">
-        <!-- Placement Progress Pill -->
+        <!-- Placement / Profile Completion Progress Pill -->
         <div class="placement-progress-box">
           <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="progress-title">Batch Placement Ratio</span>
-            <span class="progress-pct">82.5%</span>
+            <span class="progress-title">{{ userRole() === 'student' ? 'Profile Completion' : 'Batch Placement Ratio' }}</span>
+            <span class="progress-pct">{{ progressMetric }}%</span>
           </div>
           <div class="progress-bar-track">
-            <div class="progress-bar-fill" style="width: 82.5%;"></div>
+            <div class="progress-bar-fill" [style.width.%]="progressMetric"></div>
           </div>
         </div>
 
@@ -497,15 +499,44 @@ import { NotificationService } from '../../core/services/notification.service';
     }
   `]
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   @Input() isCollapsed: boolean = false;
 
   private router = inject(Router);
   authService = inject(AuthService);
   notify = inject(NotificationService);
+  private reportService = inject(ReportService);
+  private studentService = inject(StudentService);
 
   user = this.authService.currentUser;
   userRole = () => this.authService.getUserRole() || 'student';
+  progressMetric: number = 0;
+
+  ngOnInit(): void {
+    this.loadLiveMetrics();
+  }
+
+  loadLiveMetrics(): void {
+    if (this.userRole() === 'student') {
+      this.studentService.getProfileCompletion().subscribe({
+        next: (res: { success: boolean; completionPercentage: number; missingFields: string[] }) => {
+          this.progressMetric = res.completionPercentage || 0;
+        },
+        error: () => {
+          this.progressMetric = 0;
+        }
+      });
+    } else {
+      this.reportService.getAnalytics().subscribe({
+        next: (res: { success: boolean; data: any }) => {
+          this.progressMetric = res.data?.placementRate || 0;
+        },
+        error: () => {
+          this.progressMetric = 0;
+        }
+      });
+    }
+  }
 
   getRoleBadge(): string {
     const role = this.userRole();

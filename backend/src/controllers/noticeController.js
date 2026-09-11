@@ -1,7 +1,8 @@
 const Notice = require('../models/Notice');
 const Student = require('../models/Student');
-const User = require('../models/User');
-const { sendEmail, generateNoticeHtml } = require('../utils/sendEmail');
+const EmailLog = require('../models/EmailLog');
+const { sendEmail, generateNoticeHtml, isSmtpConfigured } = require('../utils/sendEmail');
+const { logActivity } = require('./activityController');
 
 // @desc    Get all active placement notices
 // @route   GET /api/notices
@@ -35,11 +36,6 @@ exports.createNotice = async (req, res, next) => {
     const students = await Student.find(studentFilter).select('email fullName branch');
     const studentEmails = students.map((s) => s.email).filter(Boolean);
 
-    // Fallback default emails if database has few records
-    if (studentEmails.length === 0) {
-      studentEmails.push('student@placement.com', 'emily.watson@student.edu', 'rohan.mehta@student.edu');
-    }
-
     const recipientCount = studentEmails.length;
 
     const notice = await Notice.create({
@@ -52,20 +48,37 @@ exports.createNotice = async (req, res, next) => {
       targetBranch: targetBranch || 'All Branches',
       priority: priority || 'Normal',
       content,
-      isEmailSent: shouldSendEmail !== false,
+      isEmailSent: shouldSendEmail !== false && recipientCount > 0,
       postedBy: req.user ? req.user.id : null,
       alertLogs: [
         { channel: 'Student Portal Dashboard', recipientCount, status: 'Published Live' },
-        { channel: 'SMTP Nodemailer Broadcast', recipientCount, status: shouldSendEmail !== false ? `Dispatched to ${recipientCount} student inbox(es)` : 'Skipped' },
-        { channel: 'WhatsApp Alert Group', recipientCount, status: 'Delivered' }
+        {
+          channel: 'SMTP Nodemailer Broadcast',
+          recipientCount,
+          status: shouldSendEmail !== false
+            ? (recipientCount > 0 ? `Dispatched to ${recipientCount} student inbox(es)` : 'No recipient students found')
+            : 'Skipped'
+        },
+        { channel: 'WhatsApp Alert Group', recipientCount, status: recipientCount > 0 ? 'Delivered' : 'No recipients' }
       ]
+    });
+
+    await logActivity({
+      type: 'NOTICE_PUBLISHED',
+      title: `Notice: ${title}`,
+      description: `${companyName || 'TPO Office'} - ${category || 'Campus Drive'}`,
+      actor: req.user ? req.user.name : 'Placement Cell',
+      actorRole: req.user ? req.user.role : 'admin',
+      targetBranch: targetBranch || 'All Branches',
+      relatedId: notice._id
     });
 
     // Asynchronously dispatch real emails to all target student email addresses
     let dispatchedCount = 0;
+    let failedCount = 0;
     let emailResults = [];
 
-    if (shouldSendEmail !== false) {
+    if (shouldSendEmail !== false && studentEmails.length > 0) {
       const emailHtml = generateNoticeHtml({
         noticeTitle: title,
         noticeContent: content,
@@ -81,14 +94,36 @@ exports.createNotice = async (req, res, next) => {
           subject: `📢 TPO Notice: ${title}`,
           html: emailHtml
         });
-        if (result.success) dispatchedCount++;
+        if (result.success) {
+          dispatchedCount++;
+        } else {
+          failedCount++;
+        }
         emailResults.push(result);
       }
+
+      await EmailLog.create({
+        sender: 'University Placement Cell',
+        recipient: studentEmails[0] || 'Target Students',
+        recipientEmails: studentEmails,
+        recipientCount: studentEmails.length,
+        subject: `Notice: ${title}`,
+        type: 'Notice Broadcast',
+        template: 'Placement Drive Announcement',
+        recipientGroup: targetBranch || 'All Branches',
+        successCount: dispatchedCount,
+        failureCount: failedCount,
+        status: isSmtpConfigured() ? (failedCount === 0 ? 'Sent' : dispatchedCount > 0 ? 'Partially Failed' : 'Failed') : 'SMTP Not Configured',
+        sentAt: new Date(),
+        sentBy: req.user ? req.user.id : null
+      });
     }
 
     res.status(201).json({
       success: true,
-      message: `📢 Notice published! Real email broadcast dispatched to ${dispatchedCount} student email address(es).`,
+      message: studentEmails.length > 0
+        ? `📢 Notice published! Email broadcast processed for ${dispatchedCount} recipient(s).`
+        : `📢 Notice published to board. No student email recipients found matching branch criteria.`,
       data: notice,
       dispatchedCount,
       emailResults
@@ -109,6 +144,13 @@ exports.testSendEmail = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Recipient email address (toEmail) is required' });
     }
 
+    if (!isSmtpConfigured()) {
+      return res.status(400).json({
+        success: false,
+        message: 'SMTP configuration required. Please configure SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS in environment.'
+      });
+    }
+
     const emailHtml = generateNoticeHtml({
       noticeTitle: subject || 'Test TPO Email Alert',
       noticeContent: message || 'This is a real test email sent from the Placement Management System Nodemailer Engine to verify real email delivery.',
@@ -122,6 +164,25 @@ exports.testSendEmail = async (req, res, next) => {
       to: toEmail,
       subject: subject || '⚡ Test Email from Placement Management System',
       html: emailHtml
+    });
+
+    await EmailLog.create({
+      sender: 'University Placement Cell',
+      recipient: toEmail,
+      recipientEmails: [toEmail],
+      recipientCount: 1,
+      subject: subject || '⚡ Test Email from Placement Management System',
+      type: 'Test Email',
+      template: 'Test Email',
+      recipientGroup: 'Direct Test',
+      successCount: result.success ? 1 : 0,
+      failureCount: result.success ? 0 : 1,
+      status: result.success ? 'Sent' : 'Failed',
+      messageId: result.messageId,
+      error: result.error,
+      errorMessage: result.error,
+      sentAt: new Date(),
+      sentBy: req.user ? req.user.id : null
     });
 
     if (result.success) {
@@ -157,5 +218,3 @@ exports.deleteNotice = async (req, res, next) => {
     next(error);
   }
 };
-
-

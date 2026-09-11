@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Job = require('../models/Job');
 const Student = require('../models/Student');
 const Notice = require('../models/Notice');
+const { logActivity } = require('./activityController');
 
 
 // Utility function to automatically calculate batch eligibility for a job drive
@@ -235,6 +236,16 @@ exports.createJob = async (req, res, next) => {
     req.body.eligibilityPercentage = eligibilityPercentage;
 
     const job = await Job.create(req.body);
+
+    logActivity({
+      type: 'JOB_POSTED',
+      title: `New Drive: ${job.companyName} (${job.title})`,
+      description: `Package: ${job.salaryPackage} LPA | Eligible: ${job.eligibleStudentCount || 0} students`,
+      actor: req.user ? req.user.name : job.companyName,
+      actorRole: req.user ? req.user.role : 'company',
+      targetBranch: (job.eligibleBranches && job.eligibleBranches.length > 0) ? job.eligibleBranches.join(', ') : 'All Branches',
+      relatedId: job._id
+    });
 
     // If auto approved by Admin, create Placement Notice & broadcast alerts
     if (job.approvalStatus === 'Approved') {

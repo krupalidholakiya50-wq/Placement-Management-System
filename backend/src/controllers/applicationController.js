@@ -3,6 +3,7 @@ const Job = require('../models/Job');
 const Student = require('../models/Student');
 const Offer = require('../models/Offer');
 const ExcelJS = require('exceljs');
+const { logActivity } = require('./activityController');
 
 // @desc    STAGE 3: Apply for job drive with backend eligibility re-validation & DUPLICATE GUARD
 // @route   POST /api/applications
@@ -99,6 +100,16 @@ exports.applyForJob = async (req, res, next) => {
       ]
     });
 
+    logActivity({
+      type: 'APPLICATION_SUBMITTED',
+      title: `${student.fullName} applied to ${job.companyName}`,
+      description: `Role: ${job.title} | Branch: ${student.branch} | CGPA: ${student.cgpa}`,
+      actor: student.fullName,
+      actorRole: 'student',
+      targetBranch: student.branch,
+      relatedId: application._id
+    });
+
     res.status(201).json({
       success: true,
       message: `Application submitted successfully for ${job.title} at ${job.companyName}!`,
@@ -192,6 +203,16 @@ exports.updateApplicationStatus = async (req, res, next) => {
     });
 
     await application.save();
+
+    logActivity({
+      type: 'STATUS_UPDATED',
+      title: `${application.studentName} -> ${status}`,
+      description: `Drive: ${application.job ? application.job.companyName : 'Placement Drive'} (${application.job ? application.job.title : 'Position'})`,
+      actor: req.user ? req.user.name : 'Placement Cell',
+      actorRole: req.user ? req.user.role : 'recruiter',
+      targetBranch: application.branch || 'All Branches',
+      relatedId: application._id
+    });
 
     // STAGE 5: AUTO GENERATE OFFER LETTER / LOI WHEN HR INTERVIEW CLEARED OR SELECTED
     if ((status === 'Selected' || status === 'HR Interview Cleared') && application.student && application.job) {

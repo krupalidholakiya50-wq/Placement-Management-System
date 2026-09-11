@@ -322,62 +322,6 @@ export class StudentsComponent implements OnInit {
     return this.students.filter((s) => s.verificationStatus === status).length;
   }
 
-  defaultStudents: Student[] = [
-    {
-      _id: 'stu_1',
-      studentId: 'STU202601',
-      fullName: 'Alex Johnson',
-      email: 'student@placement.com',
-      phone: '+91 9876543210',
-      gender: 'Male',
-      department: 'Computer Science',
-      branch: 'B.Tech CSE',
-      year: '4th Year',
-      cgpa: 9.1,
-      backlogs: 0,
-      verificationStatus: 'Verified',
-      isFrozen: true,
-      placementStatus: 'Placed',
-      placedCompany: 'Google India',
-      placedPackage: 28.5,
-      resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-    },
-    {
-      _id: 'stu_2',
-      studentId: 'STU202602',
-      fullName: 'Emily Watson',
-      email: 'emily.watson@student.edu',
-      phone: '+91 9876543211',
-      gender: 'Female',
-      department: 'Information Technology',
-      branch: 'B.Tech IT',
-      year: '4th Year',
-      cgpa: 8.8,
-      backlogs: 0,
-      verificationStatus: 'Pending Verification',
-      isFrozen: false,
-      placementStatus: 'Unplaced',
-      resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-    },
-    {
-      _id: 'stu_3',
-      studentId: 'STU202603',
-      fullName: 'Rohan Mehta',
-      email: 'rohan.mehta@student.edu',
-      phone: '+91 9876543212',
-      gender: 'Male',
-      department: 'Electronics',
-      branch: 'B.Tech ECE',
-      year: '4th Year',
-      cgpa: 7.9,
-      backlogs: 1,
-      verificationStatus: 'Draft',
-      isFrozen: false,
-      placementStatus: 'Unplaced',
-      resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-    }
-  ];
-
   loadStudents(): void {
     this.isLoading = true;
     const filters = {
@@ -390,13 +334,13 @@ export class StudentsComponent implements OnInit {
     this.studentService.getStudents(filters).subscribe({
       next: (res) => {
         const list = res.data || [];
-        const raw = list.length > 0 ? list : this.defaultStudents;
-        this.students = this.applyClientFilters(raw);
+        this.students = this.applyClientFilters(list);
         this.isLoading = false;
       },
       error: () => {
-        this.students = this.applyClientFilters(this.defaultStudents);
+        this.students = [];
         this.isLoading = false;
+        this.notify.showError('Failed to load students directory');
       }
     });
   }

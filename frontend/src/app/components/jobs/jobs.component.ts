@@ -308,72 +308,11 @@ export class JobsComponent implements OnInit {
     return !!(this.eligibilityMap[jobId] && this.eligibilityMap[jobId].isEligible);
   }
 
-  defaultJobs: Job[] = [
-    {
-      _id: 'job_google_1',
-      title: 'Software Development Engineer',
-      companyName: 'Google India',
-      salaryPackage: 28.5,
-      location: 'Bangalore / Hybrid',
-      jobType: 'Full Time',
-      minCgpa: 8.5,
-      maxBacklogs: 0,
-      eligibleBranches: ['B.Tech CSE', 'B.Tech IT'],
-      bond: 'No Service Bond',
-      eligibilityPercentage: 92,
-      eligibleStudentCount: 112,
-      ineligibleStudentCount: 8,
-      approvalStatus: 'Approved',
-      status: 'Active',
-      description: 'Build microservices, high-concurrency cloud systems, Angular standalone apps & AI platform solutions.',
-      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    },
-    {
-      _id: 'job_msft_1',
-      title: 'Cloud Solutions Architect',
-      companyName: 'Microsoft IDC',
-      salaryPackage: 24.0,
-      location: 'Hyderabad',
-      jobType: 'Full Time',
-      minCgpa: 8.0,
-      maxBacklogs: 0,
-      eligibleBranches: ['B.Tech CSE', 'B.Tech IT', 'B.Tech ECE'],
-      bond: 'No Service Bond',
-      eligibilityPercentage: 85,
-      eligibleStudentCount: 95,
-      ineligibleStudentCount: 15,
-      approvalStatus: 'Approved',
-      status: 'Active',
-      description: 'Design Azure enterprise infrastructure, distributed databases, and high-performance serverless services.',
-      deadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)
-    },
-    {
-      _id: 'job_aws_1',
-      title: 'DevOps & Backend Engineer',
-      companyName: 'Amazon Web Services',
-      salaryPackage: 18.5,
-      location: 'Bangalore / Remote',
-      jobType: 'Internship + Full Time',
-      minCgpa: 7.5,
-      maxBacklogs: 1,
-      eligibleBranches: ['B.Tech CSE', 'B.Tech IT', 'B.Tech ECE', 'B.Tech ME'],
-      bond: 'No Service Bond',
-      eligibilityPercentage: 78,
-      eligibleStudentCount: 82,
-      ineligibleStudentCount: 28,
-      approvalStatus: 'Approved',
-      status: 'Active',
-      description: 'Develop automated CI/CD deployment pipelines, container orchestration, and serverless node backend systems.',
-      deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
-    }
-  ];
-
   loadJobs(): void {
     this.isLoading = true;
     this.jobService.getJobs().subscribe({
       next: (res) => {
-        const list = res.data || [];
-        this.jobs = list.length >= 3 ? list : [...list, ...this.defaultJobs.slice(list.length)];
+        this.jobs = res.data || [];
         this.filterJobs();
         this.isLoading = false;
         
@@ -382,9 +321,10 @@ export class JobsComponent implements OnInit {
         }
       },
       error: () => {
-        this.jobs = [...this.defaultJobs];
+        this.jobs = [];
         this.filterJobs();
         this.isLoading = false;
+        this.notify.showError('Failed to load placement drives');
       }
     });
   }

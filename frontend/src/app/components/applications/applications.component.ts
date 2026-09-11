@@ -235,57 +235,6 @@ export class ApplicationsComponent implements OnInit {
     this.loadApplications();
   }
 
-  defaultApplications: Application[] = [
-    {
-      _id: 'app_demo_1',
-      studentName: 'Alex Johnson',
-      studentEmail: 'student@placement.com',
-      department: 'Computer Science',
-      branch: 'B.Tech CSE',
-      cgpa: 9.1,
-      resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      status: 'HR Interview Cleared',
-      job: {
-        _id: 'job_google_1',
-        title: 'Software Development Engineer',
-        companyName: 'Google India',
-        salaryPackage: 28.5,
-        jobType: 'Full Time'
-      } as any,
-      statusTimeline: [
-        { status: 'Applied', note: 'Application registered via Portal.' },
-        { status: 'Resume Shortlisted', note: 'Resume cleared by Google HR.' },
-        { status: 'Aptitude Test Cleared', note: 'Cleared Online Assessment.' },
-        { status: 'Technical Interview Cleared', note: 'Cleared System Design round.' },
-        { status: 'HR Interview Cleared', note: 'HR Cleared! LOI Offer generated.' }
-      ] as any,
-      createdAt: new Date()
-    },
-    {
-      _id: 'app_demo_2',
-      studentName: 'Emily Watson',
-      studentEmail: 'emily.watson@student.edu',
-      department: 'Information Technology',
-      branch: 'B.Tech IT',
-      cgpa: 8.8,
-      resumeUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      status: 'Technical Interview Cleared',
-      job: {
-        _id: 'job_msft_1',
-        title: 'Cloud Solutions Architect',
-        companyName: 'Microsoft IDC',
-        salaryPackage: 24.0,
-        jobType: 'Full Time'
-      } as any,
-      statusTimeline: [
-        { status: 'Applied', note: 'Applied for drive.' },
-        { status: 'Resume Shortlisted', note: 'Shortlisted based on CGPA 8.8.' },
-        { status: 'Technical Interview Cleared', note: 'Cleared Technical Round 2.' }
-      ] as any,
-      createdAt: new Date()
-    }
-  ];
-
   loadApplications(): void {
     this.isLoading = true;
     const request$ = this.userRole() === 'student'
@@ -295,13 +244,13 @@ export class ApplicationsComponent implements OnInit {
     request$.subscribe({
       next: (res) => {
         const list = res.data || [];
-        const raw = list.length > 0 ? list : this.defaultApplications;
-        this.applications = this.applyClientFilters(raw);
+        this.applications = this.applyClientFilters(list);
         this.isLoading = false;
       },
       error: () => {
-        this.applications = this.applyClientFilters(this.defaultApplications);
+        this.applications = [];
         this.isLoading = false;
+        this.notify.showError('Failed to load applications');
       }
     });
   }

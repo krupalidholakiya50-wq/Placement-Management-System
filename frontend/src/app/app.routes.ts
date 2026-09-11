@@ -13,6 +13,7 @@ import { NoticesComponent } from './components/notices/notices.component';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { AppLayoutComponent } from './layout/app-layout/app-layout.component';
 import { authGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -24,13 +25,33 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
-      { path: 'students', component: StudentsComponent },
-      { path: 'companies', component: CompaniesComponent },
+      { 
+        path: 'students', 
+        component: StudentsComponent, 
+        canActivate: [roleGuard], 
+        data: { roles: ['admin', 'company'] } 
+      },
+      { 
+        path: 'companies', 
+        component: CompaniesComponent, 
+        canActivate: [roleGuard], 
+        data: { roles: ['admin'] } 
+      },
       { path: 'jobs', component: JobsComponent },
       { path: 'applications', component: ApplicationsComponent },
-      { path: 'reports', component: ReportsComponent },
+      { 
+        path: 'reports', 
+        component: ReportsComponent, 
+        canActivate: [roleGuard], 
+        data: { roles: ['admin', 'company'] } 
+      },
       { path: 'profile', component: ProfileComponent },
-      { path: 'settings', component: SettingsComponent },
+      { 
+        path: 'settings', 
+        component: SettingsComponent, 
+        canActivate: [roleGuard], 
+        data: { roles: ['admin'] } 
+      },
       { path: 'notices', component: NoticesComponent }
     ]
   },

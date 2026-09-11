@@ -1,4 +1,5 @@
 const Company = require('../models/Company');
+const { logActivity } = require('./activityController');
 
 // @desc    Get all companies (Search & Industry filtering)
 // @route   GET /api/companies
@@ -99,6 +100,16 @@ exports.approveCompany = async (req, res, next) => {
     }
 
     await company.save();
+
+    logActivity({
+      type: 'COMPANY_APPROVED',
+      title: `Partner Company ${company.status}: ${company.name}`,
+      description: `Industry: ${company.industry || 'Technology'} | Location: ${company.location || 'Pan-India'}`,
+      actor: req.user ? req.user.name : 'TPO Admin',
+      actorRole: 'admin',
+      targetBranch: 'All Branches',
+      relatedId: company._id
+    });
 
     res.status(200).json({
       success: true,

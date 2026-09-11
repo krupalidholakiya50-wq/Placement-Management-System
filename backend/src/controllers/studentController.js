@@ -1,6 +1,7 @@
 const Student = require('../models/Student');
 const User = require('../models/User');
 const ExcelJS = require('exceljs');
+const { logActivity } = require('./activityController');
 
 // Helper function to calculate Profile Completion Percentage (0% - 100%)
 const calculateProfileCompletion = (student) => {
@@ -258,6 +259,16 @@ exports.verifyStudentProfile = async (req, res, next) => {
     }
 
     await student.save();
+
+    logActivity({
+      type: 'STUDENT_VERIFIED',
+      title: `Student Profile ${action === 'approve' ? 'Verified' : 'Verification Rejected'}: ${student.fullName}`,
+      description: `Enrollment: ${student.studentId} | Department: ${student.department}`,
+      actor: req.user ? req.user.name : 'TPO Admin',
+      actorRole: 'admin',
+      targetBranch: student.branch || 'All Branches',
+      relatedId: student._id
+    });
 
     res.status(200).json({
       success: true,

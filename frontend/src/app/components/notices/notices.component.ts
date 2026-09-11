@@ -5,6 +5,7 @@ import { NoticeService } from '../../core/services/notice.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ApplicationService } from '../../core/services/application.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { EmailService } from '../../core/services/email.service';
 import { Notice } from '../../core/models/notice.model';
 
 @Component({
@@ -71,7 +72,8 @@ import { Notice } from '../../core/models/notice.model';
             </div>
             <div>
               <div class="text-muted small font-monospace">Emails Dispatched</div>
-              <h4 class="fw-extrabold text-slate-900 mb-0">1,275 Sent</h4>
+              <h4 class="fw-extrabold text-slate-900 mb-0" *ngIf="emailMetrics.total > 0">{{ emailMetrics.total }} Sent</h4>
+              <h6 class="fw-bold text-muted mb-0" *ngIf="emailMetrics.total === 0">No email activity yet.</h6>
             </div>
           </div>
         </div>
@@ -95,7 +97,8 @@ import { Notice } from '../../core/models/notice.model';
             </div>
             <div>
               <div class="text-muted small font-monospace">Delivery Rate</div>
-              <h4 class="fw-extrabold text-slate-900 mb-0">99.8%</h4>
+              <h4 class="fw-extrabold text-slate-900 mb-0" *ngIf="emailMetrics.total > 0">{{ emailMetrics.successRate }}%</h4>
+              <h6 class="fw-bold text-muted mb-0" *ngIf="emailMetrics.total === 0">No email activity yet.</h6>
             </div>
           </div>
         </div>
@@ -497,6 +500,7 @@ export class NoticesComponent implements OnInit {
   private noticeService = inject(NoticeService);
   private authService = inject(AuthService);
   private applicationService = inject(ApplicationService);
+  private emailService = inject(EmailService);
   private notify = inject(NotificationService);
   private fb = inject(FormBuilder);
 
@@ -508,12 +512,19 @@ export class NoticesComponent implements OnInit {
   selectedCategory = 'ALL';
   searchQuery = '';
 
+  emailMetrics = {
+    total: 0,
+    successful: 0,
+    failed: 0,
+    successRate: 0
+  };
+
   showComposeModal = false;
   isSubmitting = false;
 
   showTestEmailModal = false;
   isSendingTestEmail = false;
-  testEmailAddress = 'student@placement.com';
+  testEmailAddress = '';
   testEmailSubject = 'TPO Campus Placement Notification';
   testEmailMessage = 'Dear Student, This is a real test email sent from Nodemailer backend service.';
   testEmailLog = '';
@@ -538,7 +549,27 @@ export class NoticesComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const user = this.authService.currentUser();
+    if (user && user.email) {
+      this.testEmailAddress = user.email;
+    }
     this.fetchNotices();
+    this.fetchEmailMetrics();
+  }
+
+  fetchEmailMetrics(): void {
+    this.emailService.getSmtpStatus().subscribe({
+      next: (res) => {
+        if (res && res.counts) {
+          const total = res.counts.total || 0;
+          const successful = res.counts.delivered || 0;
+          const failed = res.counts.failed || 0;
+          const successRate = total > 0 ? Number(((successful / total) * 100).toFixed(1)) : 0;
+          this.emailMetrics = { total, successful, failed, successRate };
+        }
+      },
+      error: () => {}
+    });
   }
 
   fetchNotices(): void {
@@ -621,11 +652,13 @@ export class NoticesComponent implements OnInit {
         this.isSendingTestEmail = false;
         this.testEmailLog = res.message || `✔ Email dispatched to ${this.testEmailAddress}`;
         this.notify.showSuccess(`✔ Test Email dispatched to [${this.testEmailAddress}]!`);
+        this.fetchEmailMetrics();
       },
       error: (err) => {
         this.isSendingTestEmail = false;
         this.testEmailLog = `Error: ${err.error?.message || err.message}`;
         this.notify.showError('Failed to send test email.');
+        this.fetchEmailMetrics();
       }
     });
   }
@@ -690,6 +723,7 @@ export class NoticesComponent implements OnInit {
         this.notify.showSuccess(res.message || 'Notice & real emails broadcasted successfully!');
         this.closeComposeModal();
         this.fetchNotices();
+        this.fetchEmailMetrics();
       },
       error: () => {
         this.isSubmitting = false;

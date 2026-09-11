@@ -4,6 +4,9 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Notice = require('../models/Notice');
 const User = require('../models/User');
+const Offer = require('../models/Offer');
+const Activity = require('../models/Activity');
+const Interview = require('../models/Interview');
 
 // @desc    Inject 20+ Demo Verified Relational Records for Analytics & Performance Testing
 // @route   POST /api/seeder/inject-demo
@@ -28,6 +31,9 @@ exports.injectDemoData = async (req, res, next) => {
     await Company.deleteMany({});
     await Job.deleteMany({});
     await Application.deleteMany({});
+    await Offer.deleteMany({});
+    await Activity.deleteMany({});
+    await Interview.deleteMany({});
 
     // 3. Inject 5 Corporate Partner Companies
     const companies = await Company.insertMany([
@@ -128,7 +134,7 @@ exports.injectDemoData = async (req, res, next) => {
       fullName: s.name,
       email: s.email,
       phone: `+91 98765${10000 + idx}`,
-      department: s.branch.includes('CSE') || s.branch.includes('IT') ? 'Computer Science & Engineering' : 'Engineering Department',
+      department: s.branch.includes('CSE') ? 'Computer Science' : s.branch.includes('IT') ? 'Information Technology' : 'Electronics',
       branch: s.branch,
       semester: '7th Semester',
       year: '4th Year',
@@ -276,16 +282,127 @@ exports.injectDemoData = async (req, res, next) => {
       };
     });
 
-    await Application.insertMany(appDocs);
+    const insertedApps = await Application.insertMany(appDocs);
+
+    // 7. Inject Offers for Placed students
+    const placedStudents = injectedStudents.filter(s => s.placementStatus === 'Placed');
+    const offerDocs = placedStudents.map((s, idx) => {
+      const matchedJob = injectedJobs[idx % injectedJobs.length];
+      const matchedApp = insertedApps.find(a => a.student.toString() === s._id.toString()) || insertedApps[0];
+      return {
+        application: matchedApp ? matchedApp._id : insertedApps[0]._id,
+        job: matchedJob._id,
+        student: s._id,
+        studentName: s.fullName,
+        companyName: s.placedCompany || matchedJob.companyName,
+        role: matchedJob.title,
+        packageOffered: s.placedPackage || matchedJob.salaryPackage,
+        location: matchedJob.location,
+        status: 'Accepted',
+        respondedAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      };
+    });
+    await Offer.insertMany(offerDocs);
+
+    // 8. Inject Real Activity Timeline Events
+    const activityDocs = [
+      {
+        type: 'JOB_POSTED',
+        title: 'New Drive: Google India (Software Development Engineer)',
+        description: 'Package: 28.5 LPA | B.Tech CSE / IT Batch 2026',
+        actor: 'Sarah Jenkins',
+        actorRole: 'company',
+        targetBranch: 'B.Tech CSE, B.Tech IT',
+        createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        type: 'JOB_POSTED',
+        title: 'New Drive: Microsoft IDC (Cloud Solutions Architect)',
+        description: 'Package: 24.0 LPA | B.Tech CSE, IT, ECE',
+        actor: 'David Miller',
+        actorRole: 'company',
+        targetBranch: 'B.Tech CSE, B.Tech IT, B.Tech ECE',
+        createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000)
+      },
+      {
+        type: 'OFFER_EXTENDED',
+        title: '🎉 Offer Accepted: Alex Johnson -> Google India',
+        description: 'Role: Software Development Engineer | CTC: 28.5 LPA',
+        actor: 'Alex Johnson',
+        actorRole: 'student',
+        targetBranch: 'B.Tech CSE',
+        createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      },
+      {
+        type: 'OFFER_EXTENDED',
+        title: '🎉 Offer Accepted: Emily Watson -> Microsoft IDC',
+        description: 'Role: Cloud Solutions Architect | CTC: 24.0 LPA',
+        actor: 'Emily Watson',
+        actorRole: 'student',
+        targetBranch: 'B.Tech IT',
+        createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000)
+      },
+      {
+        type: 'STATUS_UPDATED',
+        title: 'Karan Patel -> Technical Interview Cleared',
+        description: 'Drive: Amazon Web Services (DevOps & Backend Engineer)',
+        actor: 'Priya Sharma',
+        actorRole: 'recruiter',
+        targetBranch: 'B.Tech CSE',
+        createdAt: new Date(now - 12 * 60 * 60 * 1000)
+      },
+      {
+        type: 'STUDENT_VERIFIED',
+        title: 'Student Profile Verified: Ananya Roy',
+        description: 'Enrollment: STU2026006 | Department: Computer Science',
+        actor: 'TPO Director',
+        actorRole: 'admin',
+        targetBranch: 'B.Tech IT',
+        createdAt: new Date(now - 6 * 60 * 60 * 1000)
+      }
+    ];
+    await Activity.insertMany(activityDocs);
+
+    // 9. Inject Sample Interviews
+    const interviewDocs = [
+      {
+        job: injectedJobs[0]._id,
+        student: injectedStudents[2]._id,
+        company: companies[0]._id,
+        roundName: 'Technical Interview',
+        roundNumber: 2,
+        interviewDate: new Date(now + 2 * 24 * 60 * 60 * 1000),
+        meetingLink: 'https://meet.google.com/xyz-pmst-tpo',
+        interviewerName: 'Sarah Jenkins (Google Tech Lead)',
+        status: 'Scheduled',
+        instructions: 'Please be ready with your coding IDE and camera enabled 10 minutes prior.'
+      },
+      {
+        job: injectedJobs[1]._id,
+        student: injectedStudents[3]._id,
+        company: companies[1]._id,
+        roundName: 'System Architecture Round',
+        roundNumber: 2,
+        interviewDate: new Date(now + 3 * 24 * 60 * 60 * 1000),
+        meetingLink: 'https://teams.microsoft.com/l/meetup-join/19%3a789',
+        interviewerName: 'David Miller (Principal Architect)',
+        status: 'Scheduled',
+        instructions: 'Prepare to discuss distributed systems and high-availability design.'
+      }
+    ];
+    await Interview.insertMany(interviewDocs);
 
     res.status(200).json({
       success: true,
-      message: '⚡ 20+ Verified Students, 5 Companies, 5 Jobs (with deadlines) & 10 Multi-Stage Applications injected successfully!',
+      message: '⚡ 20+ Verified Students, 5 Companies, 5 Jobs, 10 Applications, Offers, Real Activities & Interviews seeded successfully!',
       counts: {
         students: injectedStudents.length,
         companies: companies.length,
         jobs: injectedJobs.length,
-        applications: appDocs.length
+        applications: insertedApps.length,
+        offers: offerDocs.length,
+        activities: activityDocs.length,
+        interviews: interviewDocs.length
       }
     });
   } catch (error) {

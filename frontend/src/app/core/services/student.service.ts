@@ -40,6 +40,10 @@ export class StudentService {
     return this.http.get<{ success: boolean; data: Student; completionPercentage: number; missingFields: string[] }>(`${this.apiUrl}/profile/me`);
   }
 
+  getProfileCompletion(): Observable<{ success: boolean; completionPercentage: number; missingFields: string[] }> {
+    return this.http.get<{ success: boolean; completionPercentage: number; missingFields: string[] }>(`${this.apiUrl}/profile/me`);
+  }
+
   submitForVerification(): Observable<{ success: boolean; message: string; data: Student }> {
     return this.http.post<{ success: boolean; message: string; data: Student }>(`${this.apiUrl}/submit-verification`, {});
   }

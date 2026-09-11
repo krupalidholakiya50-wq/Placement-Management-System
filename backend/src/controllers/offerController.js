@@ -1,6 +1,7 @@
 const Offer = require('../models/Offer');
 const Student = require('../models/Student');
 const Application = require('../models/Application');
+const { logActivity } = require('./activityController');
 
 // @desc    STEP 5: Get logged in student's Offer Letters & LOIs
 // @route   GET /api/offers/my
@@ -61,6 +62,16 @@ exports.respondToOffer = async (req, res, next) => {
       student.placedCompany = offer.companyName;
       student.placedPackage = offer.packageOffered;
       await student.save();
+
+      logActivity({
+        type: 'OFFER_EXTENDED',
+        title: `🎉 Offer Accepted: ${student.fullName} -> ${offer.companyName}`,
+        description: `Role: ${offer.role} | Package: ${offer.packageOffered} LPA`,
+        actor: student.fullName,
+        actorRole: 'student',
+        targetBranch: student.branch || 'All Branches',
+        relatedId: offer._id
+      });
 
       return res.status(200).json({
         success: true,

@@ -88,7 +88,7 @@ const StudentSchema = new mongoose.Schema(
     department: {
       type: String,
       required: [true, 'Department is required'],
-      enum: ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil']
+      default: 'Computer Science'
     },
     branch: {
       type: String,

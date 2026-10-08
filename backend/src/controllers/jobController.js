@@ -3,6 +3,7 @@ const Job = require('../models/Job');
 const Student = require('../models/Student');
 const Notice = require('../models/Notice');
 const { logActivity } = require('./activityController');
+const { createNotification } = require('./notificationController');
 
 
 // Utility function to automatically calculate batch eligibility for a job drive
@@ -258,11 +259,27 @@ exports.createJob = async (req, res, next) => {
         eligibilityCriteria: `Min CGPA: ${job.minCgpa}, Max Backlogs: ${job.maxBacklogs}, Branches: ${(job.eligibleBranches || []).join(', ')}`,
         content: `Official Notice: ${job.companyName} is organizing a campus drive for ${job.title} with CTC ${job.salaryPackage} LPA. Eligible verified students can apply via the portal.`,
         alertLogs: [
-          { channel: 'Student Portal', recipientCount: 350, status: 'Published Live' },
-          { channel: 'Email Broadcast (Nodemailer)', recipientCount: 350, status: 'Sent' },
-          { channel: 'WhatsApp Group Alert', recipientCount: 350, status: 'Broadcasted' }
+          { channel: 'Student Portal', recipientCount: job.eligibleStudentCount || 1, status: 'Published Live' },
+          { channel: 'Email Broadcast (Nodemailer)', recipientCount: job.eligibleStudentCount || 1, status: 'Sent' }
         ]
       });
+
+      // Dispatch notifications to verified students
+      const verifiedStudents = await Student.find({ verificationStatus: 'Verified' }).limit(50);
+      for (const student of verifiedStudents) {
+        if (student.user || student._id) {
+          await createNotification({
+            recipient: student.user || student._id,
+            recipientRole: 'student',
+            title: `Drive Published: ${job.companyName}`,
+            message: `${job.companyName} announced ${job.title} (${job.salaryPackage} LPA). Check eligibility & apply.`,
+            type: 'DRIVE_ANNOUNCEMENT',
+            relatedEntity: 'Job',
+            relatedEntityId: job._id,
+            link: '/jobs'
+          });
+        }
+      }
     }
 
     res.status(201).json({

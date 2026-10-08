@@ -4,6 +4,8 @@ const Company = require('../models/Company');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Notice = require('../models/Notice');
+const Notification = require('../models/Notification');
+const EmailLog = require('../models/EmailLog');
 
 
 const seedData = async () => {
@@ -339,8 +341,739 @@ const seedData = async () => {
         ]
       }
     ]);
+    
+    const now = Date.now();
 
-    console.log('✅ Auto-seeding completed successfully!');
+    // 7. Seed 15 Realistic Notification Records Per Role (Admin, Student, Company)
+    const studentNotifications = [
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Placement Drive Published: Google India',
+        message: 'Google India announced Full Stack Software Engineer (28.5 LPA). Eligible CSE/IT candidates can register.',
+        type: 'DRIVE_ANNOUNCEMENT',
+        link: '/jobs',
+        isRead: false,
+        createdAt: new Date(now - 10 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Application Submitted: Google India',
+        message: 'Your application for Full Stack Software Engineer has been registered successfully.',
+        type: 'APPLICATION_UPDATE',
+        link: '/applications',
+        isRead: true,
+        readAt: new Date(now - 9 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 9 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Application Under Review',
+        message: 'Google India Recruitment Panel has verified your CGPA (9.1) and shortlisted your profile for testing.',
+        type: 'APPLICATION_UPDATE',
+        link: '/applications',
+        isRead: true,
+        readAt: new Date(now - 8 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 8 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Online Assessment Assigned',
+        message: 'Online Technical Assessment: Google Coding Challenge (60 mins) has been assigned. Window opens today.',
+        type: 'ASSESSMENT_INVITATION',
+        link: '/assessments',
+        isRead: false,
+        createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Online Assessment Reminder',
+        message: 'Reminder: Google India Technical Assessment window closes in 24 hours. Ensure timely completion.',
+        type: 'ASSESSMENT_INVITATION',
+        link: '/assessments',
+        isRead: true,
+        readAt: new Date(now - 6 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 6 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Assessment Submitted Successfully',
+        message: 'Your assessment submission was received. Score: 92/100 (Qualified).',
+        type: 'ASSESSMENT_RESULT',
+        link: '/assessments',
+        isRead: true,
+        readAt: new Date(now - 5 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Assessment Result Published',
+        message: 'Congratulations! You have cleared Round 1 Online Assessment for Google India.',
+        type: 'ASSESSMENT_RESULT',
+        link: '/assessments',
+        isRead: false,
+        createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Candidate Shortlisted for Interview',
+        message: 'You have been shortlisted for Round 2 Technical Interview with Google India Engineering team.',
+        type: 'APPLICATION_UPDATE',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Technical Interview Scheduled',
+        message: 'Technical Interview Round 1 scheduled for Friday at 10:00 AM via Google Meet.',
+        type: 'INTERVIEW_SCHEDULED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Technical Round Cleared',
+        message: 'Feedback updated: Candidate successfully cleared System Design & Data Structures round.',
+        type: 'INTERVIEW_SCHEDULED',
+        link: '/applications',
+        isRead: true,
+        readAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'HR Interview Scheduled',
+        message: 'Final HR Discussion scheduled for tomorrow at 3:00 PM with Google Talent Acquisition.',
+        type: 'INTERVIEW_SCHEDULED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Final Selection Announced',
+        message: 'Congratulations! You have been selected for the position of Full Stack Software Engineer at Google India.',
+        type: 'OFFER_EXTENDED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Offer Letter Available',
+        message: 'Official Offer Letter with CTC 28.5 LPA is available for download on the portal.',
+        type: 'OFFER_EXTENDED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 18 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'TPO Mandatory Notice',
+        message: 'All Batch 2026 students are required to verify resume documents with T&P Cell.',
+        type: 'SYSTEM_ALERT',
+        link: '/notices',
+        isRead: true,
+        readAt: new Date(now - 12 * 60 * 60 * 1000),
+        createdAt: new Date(now - 12 * 60 * 60 * 1000)
+      },
+      {
+        recipient: studentUser._id,
+        recipientRole: 'student',
+        title: 'Upcoming Drive: Microsoft IDC',
+        message: 'Microsoft IDC Cloud Solutions Architect drive (24.0 LPA) registration closes in 3 days.',
+        type: 'DRIVE_ANNOUNCEMENT',
+        link: '/jobs',
+        isRead: false,
+        createdAt: new Date(now - 4 * 60 * 60 * 1000)
+      }
+    ];
+
+    const recruiterNotifications = [
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Company Registration Approved',
+        message: 'Your corporate partner profile has been approved by the University Training & Placement Office.',
+        type: 'COMPANY_APPROVAL',
+        link: '/companies',
+        isRead: true,
+        readAt: new Date(now - 12 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 12 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Placement Drive Published',
+        message: 'Full Stack Software Engineer drive is now active. Batch eligibility metrics calculated.',
+        type: 'DRIVE_ANNOUNCEMENT',
+        link: '/jobs',
+        isRead: true,
+        readAt: new Date(now - 10 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 10 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'New Applications Received',
+        message: '45 candidate applications received for Full Stack Software Engineer position.',
+        type: 'APPLICATION_UPDATE',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 9 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Candidate Eligibility Verified',
+        message: 'TPO Cell verified 38 eligible candidates matching CGPA >= 8.5 criteria.',
+        type: 'STUDENT_VERIFICATION',
+        link: '/applications',
+        isRead: true,
+        readAt: new Date(now - 8 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 8 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Assessment Published & Assigned',
+        message: 'Technical Coding Assessment published and assigned to 35 eligible candidates.',
+        type: 'ASSESSMENT_INVITATION',
+        link: '/assessments',
+        isRead: true,
+        readAt: new Date(now - 7 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Assessment Submissions Received',
+        message: '32 candidates completed the online assessment. Performance analytics ready for review.',
+        type: 'ASSESSMENT_RESULT',
+        link: '/assessments',
+        isRead: false,
+        createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Candidates Shortlisted',
+        message: '12 candidates scored >80% and were advanced to Technical Interview stage.',
+        type: 'APPLICATION_UPDATE',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Interview Slots Scheduled',
+        message: 'Technical Interview panel slots configured for Friday starting at 09:30 AM.',
+        type: 'INTERVIEW_SCHEDULED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Interview Panel Feedback Logged',
+        message: 'Technical panel submitted evaluation feedback for 10 candidates.',
+        type: 'INTERVIEW_SCHEDULED',
+        link: '/applications',
+        isRead: true,
+        readAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Candidate Selection Confirmed',
+        message: 'Final selection confirmed for candidate Alex Johnson (CGPA 9.1).',
+        type: 'OFFER_EXTENDED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Offer Letter Drafted',
+        message: 'Offer letter for 28.5 LPA generated and dispatched for student acceptance.',
+        type: 'OFFER_EXTENDED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 20 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Offer Accepted by Candidate',
+        message: 'Alex Johnson has formally accepted the campus placement offer from Google India.',
+        type: 'OFFER_EXTENDED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 16 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'TPO Onboarding Request',
+        message: 'Placement cell requested confirmation of tentative joining date for selected candidates.',
+        type: 'SYSTEM_ALERT',
+        link: '/mailbox',
+        isRead: false,
+        createdAt: new Date(now - 10 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Drive Application Deadline',
+        message: 'Application deadline for Full Stack Software Engineer drive reached.',
+        type: 'DRIVE_ANNOUNCEMENT',
+        link: '/jobs',
+        isRead: true,
+        readAt: new Date(now - 5 * 60 * 60 * 1000),
+        createdAt: new Date(now - 5 * 60 * 60 * 1000)
+      },
+      {
+        recipient: companyUser._id,
+        recipientRole: 'company',
+        title: 'Campus Recruitment Summary',
+        message: 'Drive completion report and placement statistics generated for academic record.',
+        type: 'SYSTEM_ALERT',
+        link: '/reports',
+        isRead: false,
+        createdAt: new Date(now - 1 * 60 * 60 * 1000)
+      }
+    ];
+
+    const adminNotifications = [
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'New Corporate Registration',
+        message: 'Google India registered corporate recruiting profile on the portal.',
+        type: 'COMPANY_APPROVAL',
+        link: '/companies',
+        isRead: true,
+        readAt: new Date(now - 14 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 14 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Company Verification Pending',
+        message: 'Microsoft IDC submitted campus recruiting credentials for TPO verification.',
+        type: 'COMPANY_APPROVAL',
+        link: '/companies',
+        isRead: false,
+        createdAt: new Date(now - 12 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'New Placement Drive Created',
+        message: 'Google India published Full Stack Software Engineer drive offering 28.5 LPA.',
+        type: 'DRIVE_ANNOUNCEMENT',
+        link: '/jobs',
+        isRead: true,
+        readAt: new Date(now - 10 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 10 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Batch Applications Milestone',
+        message: '120 total student applications submitted across 5 active campus drives.',
+        type: 'APPLICATION_UPDATE',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 9 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Online Assessment Scheduled',
+        message: 'Google India Technical Assessment scheduled for 45 eligible CSE/IT candidates.',
+        type: 'ASSESSMENT_INVITATION',
+        link: '/assessments',
+        isRead: true,
+        readAt: new Date(now - 7 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Assessment Completion Rate: 95%',
+        message: 'Assessment submissions completed with zero proctoring infractions.',
+        type: 'ASSESSMENT_RESULT',
+        link: '/assessments',
+        isRead: false,
+        createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Candidates Passed Assessment',
+        message: '12 candidates cleared assessment cutoff and advanced to interview round.',
+        type: 'APPLICATION_UPDATE',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 4 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Interview Schedule Published',
+        message: 'Interview slots for Google India configured in Campus Lab 302 and Virtual Meet.',
+        type: 'INTERVIEW_SCHEDULED',
+        link: '/applications',
+        isRead: true,
+        readAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Interview Round Completed',
+        message: 'Technical rounds completed. Recruiter submitted shortlist for HR round.',
+        type: 'INTERVIEW_SCHEDULED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Offer Letters Extended',
+        message: 'Google India issued official selection offers for 2 candidates at 28.5 LPA.',
+        type: 'OFFER_EXTENDED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Offer Accepted: Alex Johnson',
+        message: 'Alex Johnson (B.Tech CSE) accepted campus offer from Google India.',
+        type: 'OFFER_EXTENDED',
+        link: '/applications',
+        isRead: false,
+        createdAt: new Date(now - 18 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Placement Milestone Reached',
+        message: '85% placement milestone reached for Computer Science & Engineering batch.',
+        type: 'SYSTEM_ALERT',
+        link: '/reports',
+        isRead: false,
+        createdAt: new Date(now - 14 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Student Verification Queue',
+        message: '15 new student academic transcripts awaiting TPO officer verification.',
+        type: 'STUDENT_VERIFICATION',
+        link: '/students',
+        isRead: false,
+        createdAt: new Date(now - 10 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Urgent Notice Broadcasted',
+        message: 'Campus interview schedule notice broadcasted to 450 registered students via SMTP.',
+        type: 'SYSTEM_ALERT',
+        link: '/notices',
+        isRead: true,
+        readAt: new Date(now - 6 * 60 * 60 * 1000),
+        createdAt: new Date(now - 6 * 60 * 60 * 1000)
+      },
+      {
+        recipient: adminUser._id,
+        recipientRole: 'admin',
+        title: 'Annual Placement Report Ready',
+        message: 'Consolidated 2025-26 Placement Report with CTC analytics ready for export.',
+        type: 'SYSTEM_ALERT',
+        link: '/reports',
+        isRead: false,
+        createdAt: new Date(now - 2 * 60 * 60 * 1000)
+      }
+    ];
+
+    await Notification.insertMany([...studentNotifications, ...recruiterNotifications, ...adminNotifications]);
+
+    // 8. Seed Realistic Database-Driven Emails in EmailLog
+    const emailLogs = [
+      // Student Emails
+      {
+        sender: 'Google India Talent Acquisition',
+        senderId: companyUser._id,
+        senderRole: 'company',
+        recipient: 'student@placement.com',
+        recipientId: studentUser._id,
+        recipientRole: 'student',
+        recipientEmails: ['student@placement.com'],
+        recipientCount: 1,
+        subject: 'Online Assessment Invitation — Google India | Full Stack Software Engineer',
+        type: 'Assessment Invitation',
+        template: 'Assessment Invitation',
+        recipientGroup: 'Custom Recipients',
+        relatedEntity: 'Assessment',
+        body: `Dear Alex Johnson,\n\nYou have been invited to participate in the online technical assessment for the Full Stack Software Engineer position at Google India.\n\nAssessment Duration: 60 Minutes\nAssessment Window: Open for 48 Hours\nPlatform: Placement Pro Assessment Hub\n\nPlease log in to the Placement Management Portal and complete the assessment within the specified window.\n\nRegards,\nCampus Talent Acquisition\nGoogle India`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 7 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 7 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'University Placement Cell',
+        senderId: adminUser._id,
+        senderRole: 'admin',
+        recipient: 'student@placement.com',
+        recipientId: studentUser._id,
+        recipientRole: 'student',
+        recipientEmails: ['student@placement.com'],
+        recipientCount: 1,
+        subject: 'Interview Scheduled — Google India | Technical Round 1',
+        type: 'Interview Scheduled',
+        template: 'Interview Schedule',
+        recipientGroup: 'Custom Recipients',
+        relatedEntity: 'Interview',
+        body: `Dear Alex Johnson,\n\nYou have been shortlisted for the Technical Round 1 interview for the position of Full Stack Software Engineer at Google India.\n\nDate: Friday, September 14, 2026\nTime: 10:00 AM IST\nMode: Virtual Interview / Google Meet\nMeeting Link: https://meet.google.com/xyz-pmst-tpo\nInterviewer: Sarah Jenkins (Lead Systems Architect)\n\nPlease be available 10 minutes before your scheduled slot with your camera active and an updated resume.\n\nRegards,\nTraining & Placement Office`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 3 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 3 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'University Placement Cell',
+        senderId: adminUser._id,
+        senderRole: 'admin',
+        recipient: 'student@placement.com',
+        recipientId: studentUser._id,
+        recipientRole: 'student',
+        recipientEmails: ['student@placement.com'],
+        recipientCount: 1,
+        subject: 'Final Selection & Offer Letter — Google India | Congratulations',
+        type: 'Final Selection',
+        template: 'Offer Letter',
+        recipientGroup: 'Custom Recipients',
+        relatedEntity: 'Offer',
+        body: `Dear Alex Johnson,\n\nCongratulations!\n\nWe are pleased to inform you that you have successfully completed all technical and managerial rounds for the Full Stack Software Engineer position at Google India.\n\nPackage Offered: 28.5 LPA\nLocation: Bangalore, Karnataka\n\nYour formal offer letter has been uploaded to your Placement Management Portal account. Please review and record your acceptance.\n\nRegards,\nDirector, Training & Placement Cell`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 1 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'Microsoft IDC Recruitment',
+        senderId: companyUser._id,
+        senderRole: 'company',
+        recipient: 'student@placement.com',
+        recipientId: studentUser._id,
+        recipientRole: 'student',
+        recipientEmails: ['student@placement.com'],
+        recipientCount: 1,
+        subject: 'Application Registered — Microsoft IDC | Cloud Solutions Architect',
+        type: 'Application Update',
+        template: 'Application Acknowledgment',
+        recipientGroup: 'Custom Recipients',
+        relatedEntity: 'Application',
+        body: `Dear Alex Johnson,\n\nYour application for Cloud Solutions Architect (24.0 LPA) at Microsoft IDC has been received. TPO verification is complete and candidate screening is underway.\n\nRegards,\nMicrosoft University Hiring`,
+        status: 'Delivered',
+        isRead: true,
+        readAt: new Date(now - 6 * 24 * 60 * 60 * 1000),
+        sentAt: new Date(now - 6 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 6 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'University Placement Cell',
+        senderId: adminUser._id,
+        senderRole: 'admin',
+        recipient: 'student@placement.com',
+        recipientId: studentUser._id,
+        recipientRole: 'student',
+        recipientEmails: ['student@placement.com'],
+        recipientCount: 1,
+        subject: 'TPO Placement Notice: Mandatory Resume Verification',
+        type: 'Notice Broadcast',
+        template: 'Notice Broadcast',
+        recipientGroup: 'All Students',
+        relatedEntity: 'Notice',
+        body: `Dear Candidate,\n\nAll 4th Year B.Tech students are requested to ensure academic marks and profile documents are verified before the upcoming Tier-1 recruiter drives commence.\n\nRegards,\nPlacement Office`,
+        status: 'Delivered',
+        isRead: true,
+        readAt: new Date(now - 12 * 60 * 60 * 1000),
+        sentAt: new Date(now - 12 * 60 * 60 * 1000),
+        createdAt: new Date(now - 12 * 60 * 60 * 1000)
+      },
+      // Recruiter Emails
+      {
+        sender: 'University Placement Cell',
+        senderId: adminUser._id,
+        senderRole: 'admin',
+        recipient: 'company@placement.com',
+        recipientId: companyUser._id,
+        recipientRole: 'company',
+        recipientEmails: ['company@placement.com'],
+        recipientCount: 1,
+        subject: 'Corporate Partnership Approved — University Placement Cell',
+        type: 'Company Approval',
+        template: 'Partnership Approval',
+        recipientGroup: 'Recruiters',
+        relatedEntity: 'Company',
+        body: `Dear Tech HR Recruiter,\n\nYour corporate recruiting account has been approved by the University Placement Cell. You can now publish JNFs, manage assessment test links, and review shortlisted candidate profiles.\n\nRegards,\nTraining & Placement Officer`,
+        status: 'Delivered',
+        isRead: true,
+        readAt: new Date(now - 11 * 24 * 60 * 60 * 1000),
+        sentAt: new Date(now - 11 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 11 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'University Placement Cell',
+        senderId: adminUser._id,
+        senderRole: 'admin',
+        recipient: 'company@placement.com',
+        recipientId: companyUser._id,
+        recipientRole: 'company',
+        recipientEmails: ['company@placement.com'],
+        recipientCount: 1,
+        subject: 'Candidate Applications Batch Ready — Google India SDE Drive',
+        type: 'Application Update',
+        template: 'Application Batch',
+        recipientGroup: 'Recruiters',
+        relatedEntity: 'Job',
+        body: `Dear HR Team,\n\n45 verified student applications have been received for your Full Stack Software Engineer drive. Resumes and academic scorecards are accessible in your Candidate Pipeline.\n\nRegards,\nTPO Technical Cell`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 8 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 8 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'Placement Portal Assessment Engine',
+        senderRole: 'system',
+        recipient: 'company@placement.com',
+        recipientId: companyUser._id,
+        recipientRole: 'company',
+        recipientEmails: ['company@placement.com'],
+        recipientCount: 1,
+        subject: 'Assessment Completion Telemetry — 32 Submissions Received',
+        type: 'Assessment Result',
+        template: 'Assessment Summary',
+        recipientGroup: 'Recruiters',
+        relatedEntity: 'Assessment',
+        body: `Dear Recruiter,\n\n32 candidates completed the online coding assessment for Full Stack Software Engineer. Detailed evaluation scorecards and rank lists have been compiled.\n\nRegards,\nPlacement Assessment Engine`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 5 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'University Placement Cell',
+        senderId: adminUser._id,
+        senderRole: 'admin',
+        recipient: 'company@placement.com',
+        recipientId: companyUser._id,
+        recipientRole: 'company',
+        recipientEmails: ['company@placement.com'],
+        recipientCount: 1,
+        subject: 'Offer Acceptance Notification — Alex Johnson',
+        type: 'Final Selection',
+        template: 'Offer Acceptance',
+        recipientGroup: 'Recruiters',
+        relatedEntity: 'Offer',
+        body: `Dear Recruiter,\n\nCandidate Alex Johnson (STU2026001) has formally accepted the campus placement offer for Full Stack Software Engineer (28.5 LPA).\n\nRegards,\nPlacement Office`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 16 * 60 * 60 * 1000),
+        createdAt: new Date(now - 16 * 60 * 60 * 1000)
+      },
+      // Admin Inbound / Outbound Records
+      {
+        sender: 'Microsoft IDC Campus Hiring',
+        senderRole: 'company',
+        recipient: 'admin@placement.com',
+        recipientId: adminUser._id,
+        recipientRole: 'admin',
+        recipientEmails: ['admin@placement.com'],
+        recipientCount: 1,
+        subject: 'Corporate Partnership Accreditation Request — Microsoft IDC',
+        type: 'Company Approval',
+        template: 'Accreditation Request',
+        recipientGroup: 'Placement Office',
+        relatedEntity: 'Company',
+        body: `Dear Placement Director,\n\nMicrosoft IDC has submitted registration details and JNF for Cloud Solutions Architect (24.0 LPA). Kindly review and approve our drive schedule.\n\nRegards,\nDavid Miller (Director, University Relations)`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 12 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 12 * 24 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'Placement Portal Analytics',
+        senderRole: 'system',
+        recipient: 'admin@placement.com',
+        recipientId: adminUser._id,
+        recipientRole: 'admin',
+        recipientEmails: ['admin@placement.com'],
+        recipientCount: 1,
+        subject: 'Weekly Placement Progress Telemetry & Metrics',
+        type: 'System Alert',
+        template: 'Weekly Telemetry',
+        recipientGroup: 'Placement Office',
+        relatedEntity: 'System',
+        body: `Dear TPO Director,\n\nWeekly telemetry: 5 active drives, 120 applications submitted, 35 assessments completed, 4 offers extended.\n\nRegards,\nPlacement Pro Analytics Engine`,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 18 * 60 * 60 * 1000),
+        createdAt: new Date(now - 18 * 60 * 60 * 1000)
+      },
+      {
+        sender: 'University Placement Cell',
+        senderId: adminUser._id,
+        senderRole: 'admin',
+        recipient: 'All CSE & IT Shortlisted Candidates',
+        recipientRole: 'student',
+        recipientEmails: ['student@placement.com', 'ananya.roy@student.edu', 'divya.sharma@student.edu'],
+        recipientCount: 45,
+        subject: '📢 Urgent: Google India Technical Interview Schedule Released',
+        type: 'Notice Broadcast',
+        template: 'Interview Broadcast',
+        recipientGroup: 'Specific Branch',
+        relatedEntity: 'Notice',
+        body: `Dear Candidates, The technical interview rounds for Google India Software Engineer drive are scheduled for tomorrow starting 09:30 AM in Lab 302. Please ensure your college ID and updated resume are ready.`,
+        successCount: 45,
+        failureCount: 0,
+        status: 'Delivered',
+        isRead: false,
+        sentAt: new Date(now - 2 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000)
+      }
+    ];
+
+    await EmailLog.insertMany(emailLogs);
+
+    console.log('✅ Auto-seeding completed successfully with rich Notifications and Mailbox logs!');
 
   } catch (error) {
     console.error('❌ Error during auto-seeding:', error.message);

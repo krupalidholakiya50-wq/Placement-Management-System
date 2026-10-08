@@ -2,7 +2,10 @@ const Interview = require('../models/Interview');
 const Application = require('../models/Application');
 const Student = require('../models/Student');
 const Job = require('../models/Job');
+const EmailLog = require('../models/EmailLog');
 const { logActivity } = require('./activityController');
+const { createNotification } = require('./notificationController');
+const { sendEmail, isSmtpConfigured } = require('../utils/sendEmail');
 
 // @desc    Get all interview schedules (Role isolated)
 // @route   GET /api/interviews
@@ -112,6 +115,57 @@ exports.createInterview = async (req, res, next) => {
       targetBranch: studentDoc ? studentDoc.branch : (application ? application.branch : 'All Branches'),
       relatedId: interview._id
     });
+
+    const studentUserId = studentDoc ? (studentDoc.user || studentDoc._id) : (application ? application.student : null);
+    const studentEmail = studentDoc ? studentDoc.email : (application ? application.studentEmail : null);
+
+    if (studentUserId) {
+      await createNotification({
+        recipient: studentUserId,
+        recipientRole: 'student',
+        title: `Interview Scheduled: ${companyName}`,
+        message: `${interview.roundName} scheduled on ${new Date(interview.interviewDate).toLocaleDateString()} at ${interview.interviewTime}. Mode: ${interview.mode}.`,
+        type: 'INTERVIEW_SCHEDULED',
+        relatedEntity: 'Interview',
+        relatedEntityId: interview._id,
+        link: '/applications'
+      });
+    }
+
+    if (studentEmail) {
+      const emailSubject = `Interview Scheduled — ${companyName} | ${interview.roundName}`;
+      const emailBody = `Dear ${studentName},\n\nYou have been shortlisted for ${interview.roundName} for the position at ${companyName}.\n\nDate: ${new Date(interview.interviewDate).toLocaleDateString()}\nTime: ${interview.interviewTime}\nMode: ${interview.mode}\nMeeting Link / Venue: ${interview.meetingLink || interview.venue}\n\nPlease be available 10 minutes prior.\n\nRegards,\nTraining & Placement Office`;
+
+      let isSent = false;
+      if (isSmtpConfigured()) {
+        const sendRes = await sendEmail({
+          to: studentEmail,
+          subject: emailSubject,
+          text: emailBody
+        });
+        isSent = sendRes.success;
+      }
+
+      await EmailLog.create({
+        sender: `${companyName} Recruitment Team`,
+        senderId: req.user ? req.user.id : null,
+        senderRole: req.user ? req.user.role : 'company',
+        recipient: studentEmail,
+        recipientId: studentUserId,
+        recipientRole: 'student',
+        recipientEmails: [studentEmail],
+        recipientCount: 1,
+        subject: emailSubject,
+        body: emailBody,
+        type: 'Interview Scheduled',
+        template: 'Interview Schedule',
+        relatedEntity: 'Interview',
+        relatedEntityId: interview._id,
+        status: isSent ? 'Delivered' : (isSmtpConfigured() ? 'Failed' : 'SMTP Not Configured'),
+        isRead: false,
+        sentAt: new Date()
+      });
+    }
 
     res.status(201).json({
       success: true,

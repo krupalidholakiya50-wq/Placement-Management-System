@@ -17,7 +17,12 @@ const ActivitySchema = new mongoose.Schema(
         'STUDENT_BLACKLISTED',
         'COMPANY_SUSPENDED',
         'OFFER_ACCEPTED',
-        'OFFER_DECLINED'
+        'OFFER_DECLINED',
+        'ASSESSMENT_CREATED',
+        'ASSESSMENT_ASSIGNED',
+        'ASSESSMENT_SUBMITTED',
+        'ASSESSMENT_PASSED',
+        'ASSESSMENT_FAILED'
       ],
       required: true
     },
@@ -36,7 +41,7 @@ const ActivitySchema = new mongoose.Schema(
     },
     actorRole: {
       type: String,
-      enum: ['admin', 'student', 'company', 'system'],
+      enum: ['admin', 'student', 'company', 'recruiter', 'system'],
       default: 'system'
     },
     targetBranch: {

@@ -1,208 +1,232 @@
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
-import { NotificationService } from '../../core/services/notification.service';
+import { NotificationService, NotificationItem } from '../../core/services/notification.service';
+import { EmailService } from '../../core/services/email.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-    <div class="w-100 d-flex align-items-center justify-content-between">
-      <!-- Left: Toggle & Brand Mobile -->
+    <div class="w-100 d-flex align-items-center justify-content-between header-container">
+      <!-- LEFT: Sidebar Toggle, Title & Breadcrumb -->
       <div class="d-flex align-items-center gap-3">
         <button 
-          class="btn btn-icon btn-secondary text-slate-700 shadow-sm" 
+          class="btn btn-icon btn-secondary text-slate-700 shadow-none border" 
           (click)="toggleSidebar.emit()" 
           aria-label="Toggle Sidebar"
+          style="width: 34px; height: 34px;"
         >
           <i class="bi bi-list fs-5"></i>
         </button>
 
-        <div class="d-none d-sm-flex align-items-center gap-2">
-          <div class="portal-tag">
-            <i class="bi bi-mortarboard-fill text-primary me-1"></i>
-            <span>University T&P Portal</span>
+        <div class="d-flex flex-column">
+          <div class="d-flex align-items-center gap-2">
+            <span class="header-page-title">{{ currentPageTitle }}</span>
+          </div>
+          <div class="header-breadcrumbs">
+            <span>Portal</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">{{ currentPageTitle }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Center: Global Search Bar -->
-      <div class="d-none d-md-flex flex-grow-1 mx-4 justify-content-center" style="max-width: 480px;">
-        <div class="input-group search-bar-pill">
-          <span class="input-group-text bg-transparent border-0 text-muted ps-3">
-            <i class="bi bi-search"></i>
-          </span>
-          <input
-            type="text"
-            [(ngModel)]="searchQuery"
-            (keyup.enter)="onGlobalSearch()"
-            class="form-control border-0 bg-transparent py-2 small shadow-none"
-            placeholder="Search placement drives, companies, students..."
-            aria-label="Search"
-          />
-          <span class="input-group-text bg-transparent border-0 pe-3">
-            <kbd class="search-kbd">↵ Enter</kbd>
-          </span>
-        </div>
-      </div>
-
-      <!-- Right: Role Badge, Notifications & Profile -->
-      <div class="d-flex align-items-center gap-2 ms-auto">
-        <!-- Role Badge -->
-        <div class="d-none d-lg-block me-1">
-          <span *ngIf="userRole() === 'admin'" class="role-pill-badge admin">
-            <i class="bi bi-shield-lock-fill"></i> ADMIN CONSOLE
-          </span>
-          <span *ngIf="userRole() === 'company'" class="role-pill-badge recruiter">
-            <i class="bi bi-building-fill-check"></i> CORPORATE PARTNER
-          </span>
-          <span *ngIf="userRole() === 'student'" class="role-pill-badge student">
-            <i class="bi bi-person-check-fill"></i> CANDIDATE PROFILE
-          </span>
+      <!-- RIGHT: Global Search, Notification Bell, Mailbox, Theme, User Avatar/Role -->
+      <div class="d-flex align-items-center gap-2.5 ms-auto">
+        <!-- Global Search Bar (Desktop) -->
+        <div class="d-none d-lg-flex align-items-center me-1">
+          <div class="input-group search-bar-compact">
+            <span class="input-group-text bg-transparent border-0 text-muted ps-2.5 pe-1 py-1">
+              <i class="bi bi-search" style="font-size: 0.8rem;"></i>
+            </span>
+            <input
+              type="text"
+              [(ngModel)]="searchQuery"
+              (keyup.enter)="onGlobalSearch()"
+              class="form-control border-0 bg-transparent py-1 small shadow-none"
+              placeholder="Search drives, students..."
+              aria-label="Search"
+              style="font-size: 0.82rem; width: 170px;"
+            />
+          </div>
         </div>
 
-        <!-- Notices Inbox Button -->
-        <a routerLink="/notices" class="btn btn-icon btn-secondary text-slate-700 position-relative shadow-sm" title="Placement Notices">
-          <i class="bi bi-envelope-fill text-primary"></i>
-          <span class="pulse-indicator"></span>
-        </a>
-
-        <!-- Notifications Dropdown -->
-        <div class="dropdown">
-          <button class="btn btn-icon btn-secondary text-slate-700 position-relative shadow-sm" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-bell-fill text-slate-600"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white font-mono" style="font-size: 0.6rem;">
-              3
+        <!-- Notification Bell Dropdown with Unread Count Badge -->
+        <div class="dropdown position-relative">
+          <button 
+            class="btn btn-icon btn-secondary position-relative border header-action-btn" 
+            data-bs-toggle="dropdown" 
+            data-bs-display="static"
+            aria-expanded="false" 
+            (click)="loadNotifications()"
+            title="Notifications"
+            style="width: 36px; height: 36px;"
+          >
+            <i class="bi bi-bell-fill text-slate-600" style="font-size: 0.95rem;"></i>
+            <span *ngIf="notificationUnreadCount > 0" class="header-badge-counter bg-danger border border-white font-mono">
+              {{ notificationUnreadCount > 99 ? '99+' : notificationUnreadCount }}
             </span>
           </button>
-          <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 rounded-16 overflow-hidden mt-2" style="width: 350px;">
-            <div class="p-3 bg-slate-900 text-white d-flex justify-content-between align-items-center">
+          
+          <div class="dropdown-menu dropdown-menu-end shadow-lg border p-0 rounded-12 mt-2 notification-panel-dropdown" style="width: 360px; max-width: calc(100vw - 20px); z-index: 1060; border-color: #E2E8F0;">
+            <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
               <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-bell-fill text-warning"></i>
-                <span class="fw-bold mb-0">Placement Alerts</span>
+                <i class="bi bi-bell-fill text-primary"></i>
+                <span class="fw-bold mb-0 text-slate-900" style="font-size: 0.85rem;">Notifications</span>
               </div>
-              <span class="badge bg-warning text-dark rounded-pill font-mono">3 Unread</span>
+              <div class="d-flex align-items-center gap-2">
+                <span *ngIf="notificationUnreadCount > 0" class="badge bg-warning bg-opacity-20 text-dark rounded-pill font-mono" style="font-size: 0.65rem;">
+                  {{ notificationUnreadCount }} Unread
+                </span>
+                <button *ngIf="notificationUnreadCount > 0" (click)="markAllNotificationsRead($event)" class="btn btn-link p-0 text-primary small text-decoration-none" style="font-size: 0.72rem;">
+                  Mark read
+                </button>
+              </div>
             </div>
-            <div class="list-group list-group-flush small" style="max-height: 280px; overflow-y: auto;">
-              <a routerLink="/notices" class="list-group-item list-group-item-action p-3 border-bottom">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold text-slate-900"><i class="bi bi-lightning-charge-fill text-danger me-1"></i> Google India Drive</span>
-                  <small class="text-muted font-mono" style="font-size: 0.65rem;">Today</small>
+
+            <!-- Notification Item List -->
+            <div class="list-group list-group-flush small custom-scroll" style="max-height: min(320px, calc(100vh - 200px)); overflow-y: auto; overscroll-behavior: contain;">
+              <div *ngIf="isLoadingNotifications" class="p-4 text-center text-muted">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                <span style="font-size: 0.8rem;">Loading notifications...</span>
+              </div>
+
+              <div *ngIf="!isLoadingNotifications && notifications.length === 0" class="p-4 text-center text-muted">
+                <i class="bi bi-bell-slash fs-4 d-block mb-1 text-slate-400"></i>
+                <span style="font-size: 0.8rem;">No unread notifications</span>
+              </div>
+
+              <div
+                *ngFor="let item of notifications"
+                (click)="onNotificationClick(item)"
+                class="list-group-item list-group-item-action p-2.5 border-bottom cursor-pointer"
+                [class.bg-slate-50]="!item.isRead"
+              >
+                <div class="d-flex justify-content-between align-items-start mb-0.5">
+                  <span class="fw-semibold text-slate-900" style="font-size: 0.8rem;">
+                    <span *ngIf="!item.isRead" class="unread-dot me-1"></span>
+                    {{ item.title }}
+                  </span>
+                  <small class="text-muted font-mono" style="font-size: 0.65rem; flex-shrink: 0; margin-left: 6px;">
+                    {{ item.createdAt | date:'shortTime' }}
+                  </small>
                 </div>
-                <p class="text-muted small mb-0">Shortlisting round interview schedule released for Software Engineer roles.</p>
-              </a>
-              <a routerLink="/notices" class="list-group-item list-group-item-action p-3 border-bottom">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold text-slate-900"><i class="bi bi-building-check text-primary me-1"></i> Microsoft IDC</span>
-                  <small class="text-muted font-mono" style="font-size: 0.65rem;">Yesterday</small>
-                </div>
-                <p class="text-muted small mb-0">New placement opening posted: Cloud Solution Architect (24.0 LPA).</p>
-              </a>
+                <p class="text-muted small mb-0 lh-sm" style="font-size: 0.75rem; overflow-wrap: anywhere; word-break: break-word;">
+                  {{ item.message }}
+                </p>
+              </div>
             </div>
-            <div class="p-2 text-center bg-slate-50 border-top">
-              <a routerLink="/notices" class="text-primary fw-bold text-decoration-none small">View All Campus Notices ➔</a>
+
+            <div class="p-2.5 text-center bg-slate-50 border-top">
+              <a routerLink="/mailbox" class="text-primary fw-semibold text-decoration-none small d-inline-flex align-items-center gap-1" style="font-size: 0.78rem;">
+                <span>View All in Mailbox</span>
+                <i class="bi bi-arrow-right"></i>
+              </a>
             </div>
           </div>
         </div>
 
-        <!-- Theme Toggle -->
-        <button class="btn btn-icon btn-secondary text-slate-700 shadow-sm" (click)="toggleTheme()" title="Toggle Theme">
-          <i [class]="isDarkMode ? 'bi bi-sun-fill text-warning fs-6' : 'bi bi-moon-stars-fill text-primary fs-6'"></i>
+        <!-- Mailbox Link with Unread Count Badge -->
+        <div class="position-relative">
+          <a 
+            routerLink="/mailbox" 
+            class="btn btn-icon btn-secondary position-relative border header-action-btn" 
+            title="Mailbox"
+            style="width: 36px; height: 36px;"
+          >
+            <i class="bi bi-envelope-fill text-slate-600" style="font-size: 0.95rem;"></i>
+            <span *ngIf="mailboxUnreadCount > 0" class="header-badge-counter bg-danger border border-white font-mono">
+              {{ mailboxUnreadCount > 99 ? '99+' : mailboxUnreadCount }}
+            </span>
+          </a>
+        </div>
+
+        <!-- Theme Toggle Button -->
+        <button 
+          class="btn btn-icon btn-secondary border header-action-btn" 
+          (click)="toggleTheme()" 
+          title="Toggle Dark/Light Mode"
+          style="width: 36px; height: 36px;"
+        >
+          <i [class]="isDarkMode ? 'bi bi-sun-fill text-warning' : 'bi bi-moon-fill text-slate-600'" style="font-size: 0.9rem;"></i>
         </button>
 
-        <!-- Profile / Account Switcher -->
-        <div class="dropdown ms-1">
-          <button class="btn p-1 d-flex align-items-center rounded-pill bg-white border border-slate-200 shadow-sm account-btn" data-bs-toggle="dropdown" aria-expanded="false">
-            <img [src]="getUserPhoto()" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" alt="Avatar" />
+        <div class="vr mx-1 my-auto" style="height: 24px; color: #E5E7EB;"></div>
+
+        <!-- User Profile & Account Dropdown -->
+        <div class="dropdown">
+          <button class="btn p-1 d-flex align-items-center rounded-pill bg-white border shadow-none account-btn" data-bs-toggle="dropdown" aria-expanded="false">
+            <img [src]="getUserPhoto()" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;" alt="Avatar" />
             <div class="text-start me-2 d-none d-sm-block lh-1">
-              <span class="fw-bold text-slate-900 small d-block">{{ user()?.name || 'TPO User' }}</span>
-              <span class="text-muted font-mono text-uppercase" style="font-size: 0.6rem;">{{ userRole() }}</span>
+              <span class="fw-semibold text-slate-900 d-block" style="font-size: 0.82rem;">{{ user()?.name || 'TPO User' }}</span>
+              <span class="text-muted font-mono" style="font-size: 0.62rem; text-transform: uppercase;">{{ getRoleTitle() }}</span>
             </div>
-            <i class="bi bi-chevron-down text-muted small me-1"></i>
+            <i class="bi bi-chevron-down text-muted me-1" style="font-size: 0.7rem;"></i>
           </button>
 
-          <!-- Dropdown Box -->
-          <div class="dropdown-menu dropdown-menu-end shadow-xl border-0 rounded-20 p-3 mt-2" style="width: 320px;">
-            <div class="p-3 bg-slate-900 text-white rounded-16 mb-3 shadow-sm">
-              <div class="d-flex align-items-center gap-3">
-                <img [src]="getUserPhoto()" class="rounded-circle border border-2 border-primary" style="width: 44px; height: 44px; object-fit: cover;" alt="Avatar" />
-                <div class="overflow-hidden">
-                  <div class="fw-bold text-white fs-6 text-truncate">{{ user()?.name || 'TPO User' }}</div>
-                  <small class="text-slate-300 font-mono text-truncate d-block" style="font-size: 0.7rem;">{{ user()?.email || 'user@university.edu' }}</small>
-                  <span class="badge bg-primary bg-opacity-25 text-primary-light font-mono mt-1" style="font-size: 0.6rem;">
-                    {{ userRole().toUpperCase() }} SESSION
-                  </span>
-                </div>
-              </div>
+          <!-- Dropdown Menu -->
+          <div class="dropdown-menu dropdown-menu-end shadow-md border rounded-12 p-3 mt-2" style="width: 290px; border-color: #E5E7EB;">
+            <div class="p-2.5 bg-slate-50 border rounded-8 mb-2.5">
+              <div class="fw-bold text-slate-900 small text-truncate">{{ user()?.name || 'User' }}</div>
+              <div class="text-muted font-mono text-truncate" style="font-size: 0.68rem;">{{ user()?.email || 'user@university.edu' }}</div>
+              <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 font-mono mt-1" style="font-size: 0.62rem;">
+                {{ userRole().toUpperCase() }} SESSION
+              </span>
             </div>
 
-            <!-- Role Quick Switcher -->
-            <div class="d-flex justify-content-between align-items-center px-1 mb-2">
-              <span class="text-slate-400 font-mono fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">SWITCH DEMO ROLE</span>
-              <span class="badge bg-slate-100 text-slate-600 rounded-pill font-mono" style="font-size: 0.6rem;">INSTANT</span>
+            <!-- Role Switcher -->
+            <div class="d-flex justify-content-between align-items-center mb-1.5 px-1">
+              <span class="text-muted font-mono fw-bold" style="font-size: 0.62rem;">ROLE SWITCHER</span>
             </div>
 
             <div class="d-flex flex-column gap-1 mb-2">
               <button 
-                class="btn btn-light text-start rounded-12 p-2 d-flex align-items-center justify-content-between border" 
+                class="btn btn-light text-start rounded-8 p-1.5 d-flex align-items-center justify-content-between border" 
                 [class.border-primary]="userRole() === 'admin'"
                 [class.bg-primary-subtle]="userRole() === 'admin'"
                 (click)="switchAccount('admin')"
+                style="font-size: 0.78rem;"
               >
-                <div class="d-flex align-items-center gap-2">
-                  <i class="bi bi-shield-check text-primary fs-5"></i>
-                  <div>
-                    <div class="fw-bold text-slate-900 small">TPO Admin Director</div>
-                    <small class="text-muted font-mono" style="font-size: 0.65rem;">admin&#64;placement.com</small>
-                  </div>
-                </div>
-                <i *ngIf="userRole() === 'admin'" class="bi bi-check-circle-fill text-primary"></i>
+                <span>TPO Admin</span>
+                <i *ngIf="userRole() === 'admin'" class="bi bi-check-circle-fill text-primary" style="font-size: 0.8rem;"></i>
               </button>
 
               <button 
-                class="btn btn-light text-start rounded-12 p-2 d-flex align-items-center justify-content-between border" 
+                class="btn btn-light text-start rounded-8 p-1.5 d-flex align-items-center justify-content-between border" 
                 [class.border-primary]="userRole() === 'student'"
                 [class.bg-primary-subtle]="userRole() === 'student'"
                 (click)="switchAccount('student')"
+                style="font-size: 0.78rem;"
               >
-                <div class="d-flex align-items-center gap-2">
-                  <i class="bi bi-mortarboard text-success fs-5"></i>
-                  <div>
-                    <div class="fw-bold text-slate-900 small">Alex Johnson (Student)</div>
-                    <small class="text-muted font-mono" style="font-size: 0.65rem;">student&#64;placement.com</small>
-                  </div>
-                </div>
-                <i *ngIf="userRole() === 'student'" class="bi bi-check-circle-fill text-primary"></i>
+                <span>Student</span>
+                <i *ngIf="userRole() === 'student'" class="bi bi-check-circle-fill text-primary" style="font-size: 0.8rem;"></i>
               </button>
 
               <button 
-                class="btn btn-light text-start rounded-12 p-2 d-flex align-items-center justify-content-between border" 
+                class="btn btn-light text-start rounded-8 p-1.5 d-flex align-items-center justify-content-between border" 
                 [class.border-primary]="userRole() === 'company'"
                 [class.bg-primary-subtle]="userRole() === 'company'"
                 (click)="switchAccount('company')"
+                style="font-size: 0.78rem;"
               >
-                <div class="d-flex align-items-center gap-2">
-                  <i class="bi bi-building text-warning fs-5"></i>
-                  <div>
-                    <div class="fw-bold text-slate-900 small">Tech HR Recruiter</div>
-                    <small class="text-muted font-mono" style="font-size: 0.65rem;">company&#64;placement.com</small>
-                  </div>
-                </div>
-                <i *ngIf="userRole() === 'company'" class="bi bi-check-circle-fill text-primary"></i>
+                <span>Recruiter / HR</span>
+                <i *ngIf="userRole() === 'company'" class="bi bi-check-circle-fill text-primary" style="font-size: 0.8rem;"></i>
               </button>
             </div>
 
             <hr class="my-2 border-slate-200" />
 
             <div class="d-flex flex-column gap-1">
-              <a routerLink="/profile" class="dropdown-item rounded-10 py-2 small fw-semibold text-slate-700">
-                <i class="bi bi-person-gear me-2 text-primary"></i>My Profile Settings
+              <a routerLink="/profile" class="dropdown-item rounded-8 py-1.5 small text-slate-700">
+                <i class="bi bi-person me-2 text-primary"></i>Profile
               </a>
-              <button class="dropdown-item rounded-10 py-2 small text-danger fw-bold" (click)="logout()">
-                <i class="bi bi-box-arrow-right me-2"></i>Sign Out of Account
+              <button class="dropdown-item rounded-8 py-1.5 small text-danger fw-semibold" (click)="logout()">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
               </button>
             </div>
           </div>
@@ -211,91 +235,97 @@ import { NotificationService } from '../../core/services/notification.service';
     </div>
   `,
   styles: [`
-    .portal-tag {
-      background: #f1f5f9;
-      border: 1px solid #e2e8f0;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 0.78rem;
+    .header-container {
+      user-select: none;
+      overflow: visible;
+    }
+    .header-page-title {
+      font-size: 1.05rem;
       font-weight: 700;
-      color: #334155;
+      color: #1F2937;
+      line-height: 1.15;
+    }
+    .header-breadcrumbs {
       display: flex;
       align-items: center;
-    }
-    .search-bar-pill {
-      background: #f1f5f9;
-      border: 1px solid #e2e8f0;
-      border-radius: 9999px;
-      overflow: hidden;
-      transition: all 0.2s ease;
-      width: 100%;
-    }
-    .search-bar-pill:focus-within {
-      background: #ffffff;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-    .search-kbd {
-      background: #e2e8f0;
-      color: #64748b;
-      font-size: 0.65rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .role-pill-badge {
-      padding: 6px 14px;
-      border-radius: 9999px;
+      gap: 4px;
       font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      font-family: 'JetBrains Mono', monospace;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      color: #6B7280;
     }
-    .role-pill-badge.admin {
-      background: rgba(79, 70, 229, 0.1);
-      color: #4f46e5;
-      border: 1px solid rgba(79, 70, 229, 0.25);
+    .breadcrumb-separator {
+      opacity: 0.5;
     }
-    .role-pill-badge.recruiter {
-      background: rgba(245, 158, 11, 0.1);
-      color: #d97706;
-      border: 1px solid rgba(245, 158, 11, 0.25);
+    .breadcrumb-current {
+      color: #0F766E;
+      font-weight: 600;
     }
-    .role-pill-badge.student {
-      background: rgba(16, 185, 129, 0.1);
-      color: #059669;
-      border: 1px solid rgba(16, 185, 129, 0.25);
+    .search-bar-compact {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      transition: all 0.15s ease;
     }
-    .pulse-indicator {
+    .search-bar-compact:focus-within {
+      background: #FFFFFF;
+      border-color: #0F766E;
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
+    }
+    .header-action-btn {
+      position: relative;
+      overflow: visible !important;
+    }
+    .header-badge-counter {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      width: 8px;
-      height: 8px;
-      background: #ef4444;
-      border-radius: 50%;
-      box-shadow: 0 0 6px #ef4444;
+      top: -3px;
+      right: -3px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 1.5px 4.5px;
+      border-radius: 9999px;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 5;
     }
+    .notification-panel-dropdown {
+      z-index: 1060 !important;
+      position: absolute;
+      right: 0;
+      left: auto;
+      margin-top: 8px !important;
+    }
+    .unread-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #EF4444;
+      flex-shrink: 0;
+    }
+    .cursor-pointer { cursor: pointer; }
     .account-btn:hover {
-      border-color: #6366f1 !important;
+      border-color: #CBD5E1 !important;
     }
   `]
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   @Output() toggleSidebar = new EventEmitter<void>();
 
   private router = inject(Router);
   authService = inject(AuthService);
   notify = inject(NotificationService);
+  emailService = inject(EmailService);
 
   user = this.authService.currentUser;
   userRole = () => this.authService.getUserRole() || 'student';
 
   searchQuery = '';
   isDarkMode = false;
+  currentPageTitle = 'Dashboard';
+
+  notifications: NotificationItem[] = [];
+  notificationUnreadCount = 0;
+  mailboxUnreadCount = 0;
+  isLoadingNotifications = false;
 
   constructor() {
     const saved = localStorage.getItem('portal_theme');
@@ -303,6 +333,93 @@ export class HeaderComponent {
       this.isDarkMode = true;
       document.body.classList.add('dark-theme');
     }
+
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      this.updateTitleFromUrl(event.urlAfterRedirects || event.url);
+    });
+  }
+
+  ngOnInit(): void {
+    this.updateTitleFromUrl(this.router.url);
+    this.loadCounts();
+    this.loadNotifications();
+  }
+
+  private updateTitleFromUrl(url: string): void {
+    const path = url.split('?')[0].split('#')[0].replace('/', '');
+    switch (path) {
+      case 'dashboard': this.currentPageTitle = 'Dashboard'; break;
+      case 'students': this.currentPageTitle = 'Student Directory'; break;
+      case 'companies': this.currentPageTitle = 'Corporate Partners'; break;
+      case 'jobs': this.currentPageTitle = 'Placement Drives'; break;
+      case 'applications': this.currentPageTitle = 'Applications Pipeline'; break;
+      case 'assessments': this.currentPageTitle = 'Online Assessments'; break;
+      case 'reports': this.currentPageTitle = 'Placement Reports'; break;
+      case 'profile': this.currentPageTitle = 'User Profile'; break;
+      case 'settings': this.currentPageTitle = 'System Settings'; break;
+      case 'notices': this.currentPageTitle = 'Campus Notices'; break;
+      case 'mailbox': this.currentPageTitle = 'Mailbox Center'; break;
+      default: this.currentPageTitle = 'Dashboard'; break;
+    }
+  }
+
+  loadCounts(): void {
+    this.notify.getUnreadCount().subscribe({
+      next: (res) => {
+        this.notificationUnreadCount = res.count || 0;
+      },
+      error: () => {}
+    });
+
+    this.emailService.getUnreadCount().subscribe({
+      next: (res) => {
+        this.mailboxUnreadCount = res.count || 0;
+      },
+      error: () => {}
+    });
+  }
+
+  loadNotifications(): void {
+    this.isLoadingNotifications = true;
+    this.notify.getNotifications(10).subscribe({
+      next: (res) => {
+        this.notifications = res.data || [];
+        this.notificationUnreadCount = res.unreadCount || 0;
+        this.isLoadingNotifications = false;
+      },
+      error: () => {
+        this.isLoadingNotifications = false;
+      }
+    });
+  }
+
+  onNotificationClick(item: NotificationItem): void {
+    if (!item.isRead) {
+      this.notify.markAsRead(item._id).subscribe({
+        next: () => {
+          item.isRead = true;
+          this.notificationUnreadCount = Math.max(0, this.notificationUnreadCount - 1);
+        },
+        error: () => {}
+      });
+    }
+    if (item.link) {
+      this.router.navigateByUrl(item.link);
+    }
+  }
+
+  markAllNotificationsRead(event: Event): void {
+    event.stopPropagation();
+    this.notify.markAllAsRead().subscribe({
+      next: () => {
+        this.notifications.forEach((n) => (n.isRead = true));
+        this.notificationUnreadCount = 0;
+        this.notify.showSuccess('All notifications marked as read.');
+      },
+      error: () => {}
+    });
   }
 
   getUserPhoto(): string {
@@ -311,6 +428,13 @@ export class HeaderComponent {
       return (u as any).photoUrl;
     }
     return 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80';
+  }
+
+  getRoleTitle(): string {
+    const role = this.userRole();
+    if (role === 'admin') return 'TPO Admin';
+    if (role === 'company') return 'HR Recruiter';
+    return 'Candidate';
   }
 
   onGlobalSearch(): void {
@@ -335,6 +459,8 @@ export class HeaderComponent {
     this.authService.login({ email, password }).subscribe({
       next: () => {
         this.notify.showSuccess(`Switched workspace to ${role.toUpperCase()} account!`);
+        this.loadCounts();
+        this.loadNotifications();
         this.router.navigate(['/dashboard']);
       },
       error: () => {
@@ -354,7 +480,6 @@ export class HeaderComponent {
     }
     this.notify.showSuccess(`Switched to ${this.isDarkMode ? 'Dark' : 'Light'} Mode theme.`);
   }
-
 
   logout(): void {
     this.authService.logout();

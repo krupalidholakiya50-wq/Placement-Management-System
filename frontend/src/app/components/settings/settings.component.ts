@@ -8,12 +8,12 @@ import { NotificationService } from '../../core/services/notification.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
-    <div class="container-fluid px-4 py-3">
+    <div class="d-flex flex-column gap-4 pb-4">
       <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex justify-content-between align-items-center">
         <div>
-          <h3 class="fw-bold text-slate-900 mb-1"><i class="bi bi-gear-fill text-primary me-2"></i>University TPO Portal Settings</h3>
-          <p class="text-muted mb-0">Configure academic sessions, department branches, placement policies & role permissions</p>
+          <h1 class="page-main-title mb-1">System & Placement Settings</h1>
+          <p class="body-text mb-0">Configure academic sessions, dream offer rules, interview policies and departmental codes</p>
         </div>
       </div>
 
@@ -21,35 +21,35 @@ import { NotificationService } from '../../core/services/notification.service';
       <div class="row g-4">
         <!-- Placement Policy Configuration -->
         <div class="col-lg-6">
-          <div class="enterprise-card p-4 bg-white h-100">
-            <h5 class="fw-bold text-slate-900 mb-3 border-bottom pb-2">
+          <div class="enterprise-card p-4 h-100">
+            <h4 class="card-title-heading mb-3 pb-2 border-bottom">
               <i class="bi bi-shield-lock text-primary me-2"></i>Campus Placement Policy Rules
-            </h5>
+            </h4>
 
             <form [formGroup]="policyForm" (ngSubmit)="savePolicy()">
               <div class="mb-3">
-                <label class="form-label text-slate-700 fw-semibold">Academic Placement Session</label>
+                <label class="form-label">Academic Placement Session</label>
                 <input type="text" formControlName="session" class="form-control" placeholder="2025 - 2026" />
               </div>
 
               <div class="mb-3">
-                <label class="form-label text-slate-700 fw-semibold">Dream Offer CTC Multiplier Rule</label>
+                <label class="form-label">Dream Offer CTC Multiplier Rule</label>
                 <div class="input-group">
                   <span class="input-group-text bg-light text-muted fw-bold">>=</span>
                   <input type="number" step="0.5" formControlName="dreamMultiplier" class="form-control" />
-                  <span class="input-group-text bg-light text-muted font-monospace">x Current CTC</span>
+                  <span class="input-group-text bg-light text-muted font-mono">x Base CTC</span>
                 </div>
-                <small class="text-muted">Students placed at 10 LPA can only apply to drives offering >= 20 LPA.</small>
+                <small class="meta-text text-muted mt-1 d-block">Placed students can only apply to drives with package &gt;= 2x of current accepted offer.</small>
               </div>
 
               <div class="mb-3">
-                <label class="form-label text-slate-700 fw-semibold">Blacklist No-Show Penalty (Drives Debarred)</label>
+                <label class="form-label">Interview No-Show Debar Penalty (Drives)</label>
                 <input type="number" formControlName="blacklistDebar" class="form-control" placeholder="3" />
-                <small class="text-muted">Number of consecutive drives a student is blocked for unexcused interview absence.</small>
+                <small class="meta-text text-muted mt-1 d-block">Number of placement drives a candidate is locked out of for unexcused interview absence.</small>
               </div>
 
-              <div class="text-end pt-2 border-top">
-                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+              <div class="text-end pt-3 border-top">
+                <button type="submit" class="btn btn-primary px-4">
                   Save Policy Configuration
                 </button>
               </div>
@@ -59,47 +59,49 @@ import { NotificationService } from '../../core/services/notification.service';
 
         <!-- Academic Departments & Branches -->
         <div class="col-lg-6">
-          <div class="enterprise-card p-4 bg-white h-100">
-            <h5 class="fw-bold text-slate-900 mb-3 border-bottom pb-2">
-              <i class="bi bi-diagram-3 text-warning me-2"></i>Active Academic Departments & Branches
-            </h5>
+          <div class="enterprise-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+              <h4 class="card-title-heading">
+                <i class="bi bi-diagram-3 text-info me-2"></i>Active Academic Branches
+              </h4>
+            </div>
 
             <div class="table-responsive mb-3">
-              <table class="table align-middle mb-0">
-                <thead class="bg-light">
-                  <tr class="text-muted small text-uppercase font-monospace">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
                     <th>Department</th>
                     <th>Branch Code</th>
-                    <th>Students Count</th>
+                    <th class="text-end">Batch Strength</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="fw-bold text-slate-900">Computer Science & Engg</td>
-                    <td><span class="badge bg-primary rounded-pill px-3">B.Tech CSE</span></td>
-                    <td class="font-monospace">120 Students</td>
+                    <td class="fw-semibold text-slate-900">Computer Science & Engineering</td>
+                    <td><span class="badge badge-subtle-primary font-mono">B.Tech CSE</span></td>
+                    <td class="text-end font-mono">120 Students</td>
                   </tr>
                   <tr>
-                    <td class="fw-bold text-slate-900">Information Technology</td>
-                    <td><span class="badge bg-info rounded-pill px-3">B.Tech IT</span></td>
-                    <td class="font-monospace">90 Students</td>
+                    <td class="fw-semibold text-slate-900">Information Technology</td>
+                    <td><span class="badge badge-subtle-primary font-mono">B.Tech IT</span></td>
+                    <td class="text-end font-mono">90 Students</td>
                   </tr>
                   <tr>
-                    <td class="fw-bold text-slate-900">Electronics & Comm</td>
-                    <td><span class="badge bg-secondary rounded-pill px-3">B.Tech ECE</span></td>
-                    <td class="font-monospace">75 Students</td>
+                    <td class="fw-semibold text-slate-900">Electronics & Communication</td>
+                    <td><span class="badge badge-subtle-secondary font-mono">B.Tech ECE</span></td>
+                    <td class="text-end font-mono">75 Students</td>
                   </tr>
                   <tr>
-                    <td class="fw-bold text-slate-900">Mechanical Engineering</td>
-                    <td><span class="badge bg-warning text-dark rounded-pill px-3">B.Tech ME</span></td>
-                    <td class="font-monospace">60 Students</td>
+                    <td class="fw-semibold text-slate-900">Mechanical Engineering</td>
+                    <td><span class="badge badge-subtle-secondary font-mono">B.Tech ME</span></td>
+                    <td class="text-end font-mono">60 Students</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div class="text-end pt-2 border-top">
-              <button class="btn btn-secondary rounded-pill px-4" (click)="addBranch()">
+            <div class="text-end pt-3 border-top">
+              <button class="btn btn-secondary" (click)="addBranch()">
                 <i class="bi bi-plus-lg me-1"></i> Add Academic Branch
               </button>
             </div>
@@ -127,6 +129,6 @@ export class SettingsComponent implements OnInit {
   }
 
   addBranch(): void {
-    this.notify.showSuccess('Branch creation modal triggered.');
+    this.notify.showSuccess('Branch registration modal triggered.');
   }
 }

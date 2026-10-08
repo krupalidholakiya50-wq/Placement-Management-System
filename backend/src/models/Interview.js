@@ -4,8 +4,7 @@ const InterviewSchema = new mongoose.Schema(
   {
     application: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Application',
-      required: true
+      ref: 'Application'
     },
     job: {
       type: mongoose.Schema.Types.ObjectId,
@@ -17,11 +16,10 @@ const InterviewSchema = new mongoose.Schema(
       ref: 'Student',
       required: true
     },
-    studentName: { type: String, required: true },
-    companyName: { type: String, required: true },
+    studentName: { type: String, default: 'Candidate' },
+    companyName: { type: String, default: 'Recruiter' },
     roundName: {
       type: String,
-      enum: ['Online Assessment', 'Tech Round 1', 'Tech Round 2', 'HR Round'],
       default: 'Tech Round 1'
     },
     interviewDate: {

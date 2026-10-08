@@ -11,35 +11,81 @@ import { Company } from '../../core/models/company.model';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
-    <div class="container-fluid px-4 py-3">
+    <div class="d-flex flex-column gap-4 pb-4">
       <!-- Header -->
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
-          <h3 class="fw-bold text-slate-900 mb-1"><i class="bi bi-building-fill text-primary me-2"></i>Stage 2: Corporate Placement Partners</h3>
-          <p class="text-muted mb-0">Recruiter directory, partner onboarding & TPO Approval Queue</p>
+          <h1 class="page-main-title mb-1">Corporate Placement Partners</h1>
+          <p class="body-text mb-0">Manage employer partnerships, recruiter accounts and corporate onboarding approvals</p>
         </div>
         <button
           *ngIf="isAdmin() || isRecruiter()"
-          class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm"
+          class="btn btn-primary"
           data-bs-toggle="modal"
           data-bs-target="#companyModal"
           (click)="openAddModal()"
         >
-          <i class="bi bi-building-add me-2"></i> Register Recruiting Partner
+          <i class="bi bi-building-add me-1"></i> Register Partner
         </button>
       </div>
 
-      <!-- Search & Status Filter Tabs -->
-      <div class="enterprise-card p-4 mb-4 bg-white">
+      <!-- Live Partner Metrics Row -->
+      <div class="row g-3">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon icon-blue"><i class="bi bi-building"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Total Partners</div>
+              <div class="stat-value text-primary">{{ companies.length }}</div>
+              <div class="stat-meta">Registered Organizations</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon icon-emerald"><i class="bi bi-building-check"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Active Partners</div>
+              <div class="stat-value text-success">{{ getActiveCount() }}</div>
+              <div class="stat-meta">Approved for Drives</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon icon-amber"><i class="bi bi-clock-history"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Pending Approval</div>
+              <div class="stat-value text-warning">{{ getPendingCount() }}</div>
+              <div class="stat-meta">Awaiting Verification</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon icon-cyan"><i class="bi bi-globe"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Sectors Covered</div>
+              <div class="stat-value text-info">{{ getUniqueSectorsCount() }}</div>
+              <div class="stat-meta">Industry Domains</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="enterprise-card p-3.5">
         <div class="row g-3">
           <div class="col-md-5">
+            <label class="form-label">Search</label>
             <div class="input-group">
-              <span class="input-group-text bg-white border-slate-300 text-muted"><i class="bi bi-search"></i></span>
-              <input type="text" [(ngModel)]="search" (ngModelChange)="loadCompanies()" class="form-control border-slate-300" placeholder="Search company, industry, head office, HR email..." />
+              <span class="input-group-text bg-transparent text-muted"><i class="bi bi-search"></i></span>
+              <input type="text" [(ngModel)]="search" (ngModelChange)="loadCompanies()" class="form-control" placeholder="Search company, industry, location, email..." />
             </div>
           </div>
           <div class="col-md-3">
-            <select [(ngModel)]="industry" (change)="loadCompanies()" class="form-select border-slate-300">
+            <label class="form-label">Industry Sector</label>
+            <select [(ngModel)]="industry" (change)="loadCompanies()" class="form-select">
               <option value="">All Industry Sectors</option>
               <option value="Product Development">Product Development</option>
               <option value="IT / Software">IT / Software</option>
@@ -47,64 +93,69 @@ import { Company } from '../../core/models/company.model';
               <option value="Consulting">Consulting</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <select [(ngModel)]="filterStatus" (change)="loadCompanies()" class="form-select border-slate-300">
+          <div class="col-md-3">
+            <label class="form-label">Partner Status</label>
+            <select [(ngModel)]="filterStatus" (change)="loadCompanies()" class="form-select">
               <option value="">All Partner Statuses</option>
               <option value="Active">Active Partners</option>
-              <option value="Pending Approval">Pending TPO Approval</option>
+              <option value="Pending Approval">Pending Approval</option>
               <option value="Suspended">Suspended</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <button class="btn btn-secondary w-100 rounded-pill" (click)="resetFilters()">Reset Filters</button>
+          <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-secondary w-100 p-2" (click)="resetFilters()" title="Reset Filters">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Companies Professional Cards Grid -->
+      <!-- Companies Grid -->
       <div *ngIf="!isLoading" class="row g-3">
-        <div *ngFor="let c of companies" class="col-md-6 col-lg-4">
-          <div class="enterprise-card p-4 h-100 d-flex flex-column">
-            <!-- Top Status Badge -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <span [class]="getPartnerBadgeClass(c.status)">
-                <i [class]="getPartnerBadgeIcon(c.status) + ' me-1'"></i> {{ c.status || 'Active' }}
-              </span>
-              <small class="text-muted font-monospace">{{ c.employeeCount || '100+ Employees' }}</small>
-            </div>
+        <div *ngFor="let c of companies" class="col-12 col-md-6 col-lg-6 col-xl-4">
+          <div class="enterprise-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <span [class]="getPartnerBadgeClass(c.status)">
+                  <i [class]="getPartnerBadgeIcon(c.status) + ' me-1'"></i> {{ c.status || 'Active' }}
+                </span>
+                <small class="text-muted font-mono">{{ c.employeeCount || '100+ Employees' }}</small>
+              </div>
 
-            <div class="d-flex align-items-center mb-3">
-              <img [src]="c.logoUrl || 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?auto=format&fit=crop&w=120&q=80'" class="rounded-16 me-3 border p-1" style="width: 54px; height: 54px; object-fit: cover;" />
-              <div>
-                <h5 class="fw-bold text-slate-900 mb-0">{{ c.name }}</h5>
-                <small class="text-primary fw-semibold">{{ c.industry }}</small>
+              <div class="d-flex align-items-center mb-3 min-w-0">
+                <img [src]="c.logoUrl || 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?auto=format&fit=crop&w=120&q=80'" class="rounded-8 me-3 border flex-shrink-0" style="width: 44px; height: 44px; object-fit: cover;" alt="Company Logo" />
+                <div class="min-w-0 flex-grow-1">
+                  <h4 class="fw-bold text-slate-900 mb-0 text-break">{{ c.name }}</h4>
+                  <small class="text-primary fw-semibold text-break">{{ c.industry }}</small>
+                </div>
+              </div>
+
+              <p class="body-text small mb-3 text-clamp-2 text-break">
+                {{ c.description }}
+              </p>
+
+              <div class="bg-slate-50 border rounded-8 p-2.5 mb-3 meta-text">
+                <div class="mb-1 text-break"><i class="bi bi-geo-alt me-1 text-danger"></i> Location: <strong>{{ c.location || c.headOffice || 'Bangalore' }}</strong></div>
+                <div class="mb-1 text-break"><i class="bi bi-globe me-1 text-primary"></i> Website: <a [href]="c.website" target="_blank" class="text-decoration-none fw-semibold text-break">{{ c.website }}</a></div>
+                <div class="text-break"><i class="bi bi-person me-1 text-info"></i> HR: <strong>{{ c.hrName || c.contactPerson || 'Recruiter' }}</strong> ({{ c.hrEmail || c.contactEmail || 'hr@company.com' }})</div>
               </div>
             </div>
 
-            <p class="text-slate-600 small mb-3 flex-grow-1">
-              {{ c.description }}
-            </p>
-
-            <div class="bg-slate-50 border rounded-12 p-3 mb-3 small">
-              <div class="text-slate-700 mb-1"><i class="bi bi-geo-alt me-1 text-danger"></i>Head Office: <strong>{{ c.location || c.headOffice || 'Bangalore' }}</strong></div>
-              <div class="text-slate-700 mb-1"><i class="bi bi-globe me-1 text-primary"></i>Website: <a [href]="c.website" target="_blank" class="text-decoration-none fw-bold">{{ c.website }}</a></div>
-              <div class="text-slate-700"><i class="bi bi-person me-1 text-info"></i>HR Contact: <strong>{{ c.hrName || c.contactPerson || 'Recruitment HR' }}</strong> ({{ c.hrEmail || c.contactEmail || 'hr@company.com' }})</div>
-            </div>
 
             <!-- TPO Approval Actions -->
             <div *ngIf="isAdmin()" class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
               <div class="d-flex gap-1">
                 <button
                   *ngIf="c.status !== 'Active'"
-                  class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold shadow-sm"
+                  class="btn btn-success btn-sm py-0.5 px-2.5"
                   style="font-size: 0.75rem;"
                   (click)="approveCompany(c._id!, 'approve')"
                 >
-                  Approve / Activate
+                  Approve
                 </button>
                 <button
                   *ngIf="c.status === 'Active'"
-                  class="btn btn-sm btn-outline-warning rounded-pill px-2 py-1"
+                  class="btn btn-secondary btn-sm py-0.5 px-2 text-warning"
                   style="font-size: 0.75rem;"
                   (click)="approveCompany(c._id!, 'suspend')"
                 >
@@ -113,11 +164,11 @@ import { Company } from '../../core/models/company.model';
               </div>
 
               <div class="d-flex gap-1">
-                <button class="btn btn-sm btn-secondary rounded-pill px-2" (click)="openEditModal(c)" data-bs-toggle="modal" data-bs-target="#companyModal">
-                  <i class="bi bi-pencil-fill"></i>
+                <button class="btn btn-secondary btn-sm py-0.5 px-2" (click)="openEditModal(c)" data-bs-toggle="modal" data-bs-target="#companyModal" title="Edit Partner">
+                  <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-danger rounded-circle" (click)="deleteCompany(c._id!)">
-                  <i class="bi bi-trash-fill"></i>
+                <button class="btn btn-secondary btn-sm py-0.5 px-2 text-danger" (click)="deleteCompany(c._id!)" title="Delete Partner">
+                  <i class="bi bi-trash"></i>
                 </button>
               </div>
             </div>
@@ -125,16 +176,18 @@ import { Company } from '../../core/models/company.model';
         </div>
 
         <div *ngIf="companies.length === 0" class="col-12 text-center py-5 enterprise-card">
-          <i class="bi bi-building fs-1 text-slate-300"></i>
-          <h5 class="text-slate-900 mt-3">No Corporate Partners Found</h5>
-          <p class="text-muted mb-0">Adjust search filter or register a new corporate partner.</p>
+          <div class="saas-empty-state py-3">
+            <i class="bi bi-building empty-icon"></i>
+            <div class="empty-title">No Corporate Partners Found</div>
+            <div class="empty-desc">Adjust your search criteria or register a new corporate recruiting partner.</div>
+          </div>
         </div>
       </div>
 
       <!-- Add/Edit Company Modal -->
       <div class="modal fade" id="companyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-          <div class="modal-content enterprise-card border-0 p-2">
+          <div class="modal-content border-0 p-2">
             <div class="modal-header border-bottom">
               <h5 class="modal-title fw-bold text-slate-900">
                 <i class="bi bi-building text-primary me-2"></i>
@@ -146,51 +199,51 @@ import { Company } from '../../core/models/company.model';
               <form [formGroup]="companyForm" (ngSubmit)="onSaveCompany()">
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label class="form-label text-slate-700">Company Name</label>
+                    <label class="form-label">Company Name *</label>
                     <input type="text" formControlName="name" class="form-control" placeholder="Google India" />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label text-slate-700">Industry Sector</label>
+                    <label class="form-label">Industry Sector *</label>
                     <input type="text" formControlName="industry" class="form-control" placeholder="Product Development" />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label text-slate-700">Official Website URL</label>
+                    <label class="form-label">Website URL *</label>
                     <input type="url" formControlName="website" class="form-control" placeholder="https://careers.google.com" />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label text-slate-700">Head Office Location</label>
+                    <label class="form-label">Head Office Location *</label>
                     <input type="text" formControlName="location" class="form-control" placeholder="Bangalore, Karnataka" />
                   </div>
                   <div class="col-md-4">
-                    <label class="form-label text-slate-700">HR Name</label>
+                    <label class="form-label">HR Contact Name *</label>
                     <input type="text" formControlName="hrName" class="form-control" placeholder="Sarah Jenkins" />
                   </div>
                   <div class="col-md-4">
-                    <label class="form-label text-slate-700">HR Contact Email</label>
+                    <label class="form-label">HR Email Address *</label>
                     <input type="email" formControlName="hrEmail" class="form-control" placeholder="recruitment@google.com" />
                   </div>
                   <div class="col-md-4">
-                    <label class="form-label text-slate-700">HR Contact Phone</label>
+                    <label class="form-label">HR Contact Phone *</label>
                     <input type="text" formControlName="hrPhone" class="form-control" placeholder="+91 9876543210" />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label text-slate-700">Company Size (Employees)</label>
+                    <label class="form-label">Company Size</label>
                     <input type="text" formControlName="employeeCount" class="form-control" placeholder="1,000 - 5,000 Employees" />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label text-slate-700">LinkedIn Company URL</label>
+                    <label class="form-label">LinkedIn URL</label>
                     <input type="url" formControlName="linkedinUrl" class="form-control" placeholder="https://linkedin.com/company/partner" />
                   </div>
                   <div class="col-12">
-                    <label class="form-label text-slate-700">Company Overview</label>
-                    <textarea formControlName="description" class="form-control" rows="3" placeholder="Overview of tech stack, product development, and hiring goals..."></textarea>
+                    <label class="form-label">Company Overview *</label>
+                    <textarea formControlName="description" class="form-control" rows="3" placeholder="Overview of tech stack, hiring domains, and recruitment process..."></textarea>
                   </div>
                 </div>
 
                 <div class="mt-4 text-end border-top pt-3">
-                  <button type="button" class="btn btn-secondary me-2 rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                  <button type="submit" [disabled]="companyForm.invalid" class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">
-                    {{ isEditMode ? 'Update Partner' : 'Save & Submit Partner' }}
+                  <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" [disabled]="companyForm.invalid" class="btn btn-primary px-4" data-bs-dismiss="modal">
+                    {{ isEditMode ? 'Update Partner' : 'Save & Register Partner' }}
                   </button>
                 </div>
               </form>
@@ -340,10 +393,10 @@ export class CompaniesComponent implements OnInit {
 
   getPartnerBadgeClass(status?: string): string {
     switch (status) {
-      case 'Active': return 'badge bg-success text-white rounded-pill px-3 py-1 font-monospace';
-      case 'Pending Approval': return 'badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace';
-      case 'Suspended': return 'badge bg-danger text-white rounded-pill px-3 py-1 font-monospace';
-      default: return 'badge bg-success text-white rounded-pill px-3 py-1 font-monospace';
+      case 'Active': return 'badge badge-subtle-success font-mono';
+      case 'Pending Approval': return 'badge badge-subtle-warning font-mono';
+      case 'Suspended': return 'badge badge-subtle-danger font-mono';
+      default: return 'badge badge-subtle-success font-mono';
     }
   }
 
@@ -354,5 +407,18 @@ export class CompaniesComponent implements OnInit {
       case 'Suspended': return 'bi-slash-circle';
       default: return 'bi-check-circle-fill';
     }
+  }
+
+  getActiveCount(): number {
+    return this.companies.filter(c => c.status === 'Active' || !c.status).length;
+  }
+
+  getPendingCount(): number {
+    return this.companies.filter(c => c.status === 'Pending Approval').length;
+  }
+
+  getUniqueSectorsCount(): number {
+    const sectors = new Set(this.companies.map(c => c.industry).filter(Boolean));
+    return sectors.size || 4;
   }
 }

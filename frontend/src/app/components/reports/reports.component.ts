@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ReportService, AnalyticsData } from '../../core/services/report.service';
 import { ApplicationService } from '../../core/services/application.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -7,132 +8,156 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
-    <div class="container-fluid px-4 py-3">
+    <div class="d-flex flex-column gap-4 pb-4">
       <!-- Header & Export Actions -->
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
-          <h3 class="fw-bold text-slate-900 mb-1"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Executive Placement Analytics & Report Hub</h3>
-          <p class="text-muted mb-0">Live placement statistics, package distribution, branch analytics & printable reports</p>
+          <h1 class="page-main-title mb-1">Placement Analytics & Reports</h1>
+          <p class="body-text mb-0">Comprehensive campus placement telemetry, salary distribution and branch statistics</p>
         </div>
 
-        <!-- 1-Click Export Engine Buttons -->
-        <div class="d-flex flex-wrap gap-2">
-          <button class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm" (click)="printReport()">
-            <i class="bi bi-printer-fill me-1"></i> Print / Save PDF
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <!-- Time-based filters (Section 20 Spec) -->
+          <div class="btn-group me-2" role="group">
+            <button
+              *ngFor="let period of ['1D', '7D', '30D', '1Y']"
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="selectedPeriod === period"
+              [class.btn-secondary]="selectedPeriod !== period"
+              (click)="selectPeriod(period)"
+            >
+              {{ period }}
+            </button>
+          </div>
+
+          <button class="btn btn-secondary" (click)="printReport()">
+            <i class="bi bi-printer me-1"></i> Print / PDF
           </button>
-          <button class="btn btn-success rounded-pill px-3 fw-bold shadow-sm" (click)="exportMasterExcel()">
-            <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Excel (.xlsx)
+          <button class="btn btn-secondary" (click)="exportMasterExcel()">
+            <i class="bi bi-file-earmark-excel text-success me-1"></i> Export Excel (.xlsx)
           </button>
-          <button class="btn btn-secondary rounded-pill px-3 fw-semibold shadow-sm" (click)="exportSummaryCSV()">
+          <button class="btn btn-secondary" (click)="exportSummaryCSV()">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Summary CSV
           </button>
         </div>
       </div>
 
-      <!-- 6 EXECUTIVE PLACEMENT KPI CARDS -->
-      <div class="row g-3 mb-4">
+      <!-- 6 EXECUTIVE KPI CARDS -->
+      <div class="row g-3">
         <div class="col-6 col-md-4 col-xl-2">
-          <div class="stat-card-enterprise bg-success bg-opacity-10 border-success border-opacity-20">
-            <div class="stat-icon bg-white text-success shadow-sm"><i class="bi bi-person-check-fill"></i></div>
+          <div class="stat-card-enterprise">
+            <div class="stat-icon icon-emerald"><i class="bi bi-person-check"></i></div>
             <div class="stat-content">
-              <div class="stat-label text-success">PLACEMENT RATE</div>
-              <div class="stat-value">{{ analytics?.placementRate || 0 }}%</div>
+              <div class="stat-label">Placement Rate</div>
+              <div class="stat-value text-success">{{ analytics?.placementRate || 0 }}%</div>
+              <div class="stat-meta">Verified Placed</div>
             </div>
           </div>
         </div>
 
         <div class="col-6 col-md-4 col-xl-2">
           <div class="stat-card-enterprise">
-            <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-trophy-fill"></i></div>
+            <div class="stat-icon icon-amber"><i class="bi bi-trophy"></i></div>
             <div class="stat-content">
-              <div class="stat-label">HIGHEST PACKAGE</div>
-              <div class="stat-value">{{ analytics?.highestPackage || 0 }} <small class="fs-6 text-muted fw-bold">LPA</small></div>
+              <div class="stat-label">Highest CTC</div>
+              <div class="stat-value text-warning">{{ analytics?.highestPackage || 0 }} <small style="font-size: 13px;">LPA</small></div>
+              <div class="stat-meta">Top Offer</div>
             </div>
           </div>
         </div>
 
         <div class="col-6 col-md-4 col-xl-2">
           <div class="stat-card-enterprise">
-            <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="stat-icon icon-blue"><i class="bi bi-graph-up"></i></div>
             <div class="stat-content">
-              <div class="stat-label">AVERAGE PACKAGE</div>
-              <div class="stat-value">{{ analytics?.avgPackage || 0 }} <small class="fs-6 text-muted fw-bold">LPA</small></div>
+              <div class="stat-label">Average CTC</div>
+              <div class="stat-value text-primary">{{ analytics?.avgPackage || 0 }} <small style="font-size: 13px;">LPA</small></div>
+              <div class="stat-meta">Batch Median</div>
             </div>
           </div>
         </div>
 
         <div class="col-6 col-md-4 col-xl-2">
           <div class="stat-card-enterprise">
-            <div class="stat-icon bg-info bg-opacity-10 text-info"><i class="bi bi-award-fill"></i></div>
+            <div class="stat-icon icon-cyan"><i class="bi bi-award"></i></div>
             <div class="stat-content">
-              <div class="stat-label">DREAM OFFERS</div>
-              <div class="stat-value">{{ analytics?.dreamOffersCount || 0 }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-6 col-md-4 col-xl-2">
-          <div class="stat-card-enterprise bg-danger bg-opacity-10 border-danger border-opacity-20">
-            <div class="stat-icon bg-white text-danger shadow-sm"><i class="bi bi-slash-circle-fill"></i></div>
-            <div class="stat-content">
-              <div class="stat-label text-danger">BLACKLISTED</div>
-              <div class="stat-value">{{ analytics?.blacklistedStudents || 0 }}</div>
+              <div class="stat-label">Dream Offers</div>
+              <div class="stat-value text-info">{{ analytics?.dreamOffersCount || 0 }}</div>
+              <div class="stat-meta">&gt; 2x Base CTC</div>
             </div>
           </div>
         </div>
 
         <div class="col-6 col-md-4 col-xl-2">
           <div class="stat-card-enterprise">
-            <div class="stat-icon bg-secondary bg-opacity-10 text-primary"><i class="bi bi-building"></i></div>
+            <div class="stat-icon icon-danger"><i class="bi bi-slash-circle"></i></div>
             <div class="stat-content">
-              <div class="stat-label">PARTNERS HIRING</div>
+              <div class="stat-label">Debarred</div>
+              <div class="stat-value text-danger">{{ analytics?.blacklistedStudents || 0 }}</div>
+              <div class="stat-meta">No-Show Debarred</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon icon-navy"><i class="bi bi-building"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Companies</div>
               <div class="stat-value">{{ analytics?.totalCompanies || 0 }}</div>
+              <div class="stat-meta">Recruiter Partners</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 7-STAGE ATS APPLICATION FUNNEL -->
-      <div class="enterprise-card p-4 bg-white mb-4" *ngIf="analytics?.funnel">
-        <h5 class="fw-bold text-slate-900 mb-3 border-bottom pb-2">
-          <i class="bi bi-funnel-fill text-primary me-2"></i>7-Stage Recruitment ATS Conversion Funnel
-        </h5>
+      <!-- 7-STAGE RECRUITMENT ATS CONVERSION FUNNEL -->
+      <div class="enterprise-card p-4" *ngIf="analytics?.funnel">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <div>
+            <h4 class="card-title-heading"><i class="bi bi-funnel-fill text-primary me-2"></i>Recruitment ATS Conversion Pipeline</h4>
+            <p class="body-text mb-0 mt-0.5">Applicant flow across sequential evaluation checkpoints</p>
+          </div>
+          <span class="badge badge-subtle-primary font-mono">{{ selectedPeriod }} TIMEFRAME</span>
+        </div>
+
         <div class="row g-2 text-center">
           <div class="col-4 col-md">
-            <div class="p-3 bg-slate-50 rounded-12 border">
-              <small class="text-muted font-monospace d-block">APPLIED</small>
+            <div class="p-3 bg-slate-50 rounded-8 border">
+              <small class="text-muted font-mono d-block mb-1">1. APPLIED</small>
               <h4 class="fw-bold text-slate-900 mb-0">{{ analytics?.funnel?.applied || 0 }}</h4>
             </div>
           </div>
           <div class="col-4 col-md">
-            <div class="p-3 bg-slate-50 rounded-12 border">
-              <small class="text-muted font-monospace d-block">SHORTLISTED</small>
+            <div class="p-3 bg-slate-50 rounded-8 border">
+              <small class="text-muted font-mono d-block mb-1">2. SHORTLISTED</small>
               <h4 class="fw-bold text-info mb-0">{{ analytics?.funnel?.shortlisted || 0 }}</h4>
             </div>
           </div>
           <div class="col-4 col-md">
-            <div class="p-3 bg-slate-50 rounded-12 border">
-              <small class="text-muted font-monospace d-block">ASSESSMENT</small>
+            <div class="p-3 bg-slate-50 rounded-8 border">
+              <small class="text-muted font-mono d-block mb-1">3. ASSESSMENT</small>
               <h4 class="fw-bold text-primary mb-0">{{ analytics?.funnel?.aptitude || 0 }}</h4>
             </div>
           </div>
           <div class="col-4 col-md">
-            <div class="p-3 bg-slate-50 rounded-12 border">
-              <small class="text-muted font-monospace d-block">TECH INTERVIEW</small>
-              <h4 class="fw-bold text-purple mb-0">{{ analytics?.funnel?.technical || 0 }}</h4>
+            <div class="p-3 bg-slate-50 rounded-8 border">
+              <small class="text-muted font-mono d-block mb-1">4. TECH ROUND</small>
+              <h4 class="fw-bold text-slate-900 mb-0">{{ analytics?.funnel?.technical || 0 }}</h4>
             </div>
           </div>
           <div class="col-4 col-md">
-            <div class="p-3 bg-slate-50 rounded-12 border">
-              <small class="text-muted font-monospace d-block">HR ROUND</small>
+            <div class="p-3 bg-slate-50 rounded-8 border">
+              <small class="text-muted font-mono d-block mb-1">5. HR PANEL</small>
               <h4 class="fw-bold text-warning mb-0">{{ analytics?.funnel?.hr || 0 }}</h4>
             </div>
           </div>
           <div class="col-4 col-md">
-            <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-30 rounded-12">
-              <small class="text-success font-monospace d-block fw-bold">SELECTED / OFFERS</small>
+            <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-30 rounded-8">
+              <small class="text-success font-mono d-block fw-bold mb-1">6. OFFERS RELEASED</small>
               <h4 class="fw-bold text-success mb-0">{{ analytics?.funnel?.selected || 0 }}</h4>
             </div>
           </div>
@@ -143,55 +168,80 @@ import { NotificationService } from '../../core/services/notification.service';
       <div class="row g-4">
         <!-- Branch-Wise Placement Distribution -->
         <div class="col-lg-6">
-          <div class="enterprise-card p-4 bg-white h-100">
-            <h5 class="fw-bold text-slate-900 mb-3 border-bottom pb-2">
-              <i class="bi bi-diagram-3 text-primary me-2"></i>Branch-Wise Placement Performance
-            </h5>
-
-            <div *ngFor="let b of analytics?.branchWise" class="mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold text-slate-900 small">{{ b.branch }}</span>
-                <span class="font-monospace text-primary fw-bold small">{{ b.placed }}/{{ b.total }} Placed ({{ b.percentage }}%)</span>
+          <div class="enterprise-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+              <div>
+                <h4 class="card-title-heading"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Branch-Wise Placement Breakdown</h4>
+                <p class="body-text mb-0 mt-0.5">Departmental placement statistics and package metrics</p>
               </div>
-              <div class="progress mb-1" style="height: 10px;">
-                <div class="progress-bar bg-primary" [style.width.%]="b.percentage"></div>
-              </div>
-              <small class="text-muted">Average Package Offered: <strong>{{ b.avgPackage }} LPA</strong></small>
             </div>
 
-            <div *ngIf="!analytics?.branchWise || analytics?.branchWise?.length === 0" class="text-center py-4 text-muted">
-              No branch placement metrics available yet.
+            <div class="table-responsive" *ngIf="analytics?.branchWise && analytics!.branchWise!.length > 0">
+              <table class="table-enterprise">
+                <thead>
+                  <tr>
+                    <th>Branch</th>
+                    <th>Total Students</th>
+                    <th>Placed</th>
+                    <th>Rate</th>
+                    <th>Avg CTC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let b of analytics?.branchWise">
+                    <td class="fw-semibold text-slate-900">{{ b.branch }}</td>
+                    <td>{{ b.total }}</td>
+                    <td class="text-success fw-semibold">{{ b.placed }}</td>
+                    <td><span class="badge badge-subtle-success font-mono">{{ b.percentage }}%</span></td>
+                    <td class="fw-semibold">{{ b.avgPackage ? '₹' + b.avgPackage + ' LPA' : 'N/A' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div *ngIf="!analytics?.branchWise || analytics!.branchWise!.length === 0" class="saas-empty-state py-4">
+              <i class="bi bi-bar-chart empty-icon"></i>
+              <div class="empty-title">No placement data available</div>
+              <div class="empty-desc">Placement metrics will generate as students accept company offers.</div>
             </div>
           </div>
         </div>
 
-        <!-- Top Recruiter Company Distribution -->
-        <div class="col-lg-6">
-          <div class="enterprise-card p-4 bg-white h-100">
-            <h5 class="fw-bold text-slate-900 mb-3 border-bottom pb-2">
-              <i class="bi bi-building text-warning me-2"></i>Corporate Recruiter Hiring Distribution
-            </h5>
+        <!-- Top Recruiters Table -->
+        <div class="col-12 col-xl-5">
+          <div class="card h-100">
+            <div class="card-header-enterprise">
+              <h3 class="card-title-enterprise"><i class="bi bi-trophy text-primary me-2"></i> Top Campus Recruiters</h3>
+              <span class="badge badge-subtle-primary">By Selections</span>
+            </div>
+            <div class="p-0">
+              <div class="table-responsive" *ngIf="analytics?.companyWise && analytics!.companyWise!.length > 0">
+                <table class="table-enterprise">
+                  <thead>
+                    <tr>
+                      <th>Recruiter</th>
+                      <th>Offers Made</th>
+                      <th>Avg CTC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let c of analytics?.companyWise">
+                      <td class="fw-bold text-slate-900">
+                        <i class="bi bi-building text-secondary me-2"></i> {{ c.name }}
+                      </td>
+                      <td><span class="badge badge-subtle-primary font-mono fw-bold">{{ c.hires }} Offers</span></td>
+                      <td class="text-emerald fw-semibold">₹{{ c.avgPackage }} LPA</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-            <div class="table-responsive">
-              <table class="table align-middle mb-0">
-                <thead class="bg-light">
-                  <tr class="text-muted small text-uppercase font-monospace">
-                    <th>Company Partner</th>
-                    <th>Students Placed</th>
-                    <th>Average Package Offered</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let c of analytics?.companyWise">
-                    <td class="fw-bold text-slate-900">{{ c.name }}</td>
-                    <td><span class="badge bg-primary rounded-pill px-3 py-1 font-monospace">{{ c.hires }} Offers</span></td>
-                    <td class="fw-bold text-success font-monospace">{{ c.avgPackage }} LPA</td>
-                  </tr>
-                  <tr *ngIf="!analytics?.companyWise || analytics?.companyWise?.length === 0">
-                    <td colspan="3" class="text-center py-4 text-muted">No corporate hiring data recorded yet.</td>
-                  </tr>
-                </tbody>
-              </table>
+              <!-- Zero State (Section 20 & 23) -->
+              <div *ngIf="!analytics?.companyWise || analytics!.companyWise!.length === 0" class="saas-empty-card py-5">
+                <i class="bi bi-building text-slate-400 fs-1 mb-2"></i>
+                <h6 class="fw-bold text-slate-800 mb-1">No Company Offer Data</h6>
+                <p class="text-secondary small mb-0">Placement drives are actively concluding offers.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -205,18 +255,41 @@ export class ReportsComponent implements OnInit {
   private notify = inject(NotificationService);
 
   analytics: AnalyticsData | null = null;
+  selectedPeriod: string = '30D';
 
   ngOnInit(): void {
-    this.fetchAnalytics();
+    // Instant cache hydration
+    const cached = this.reportService.getCurrentAnalytics();
+    if (cached) {
+      this.analytics = cached;
+    }
+
+    this.reportService.analytics$.subscribe((data) => {
+      if (data) {
+        this.analytics = data;
+      }
+    });
+
+    this.loadReportData();
   }
 
-  fetchAnalytics(): void {
+  selectPeriod(period: string): void {
+    this.selectedPeriod = period;
+    this.loadReportData();
+    this.notify.showSuccess(`Filtered report analytics for timeframe: ${period}`);
+  }
+
+  loadReportData(): void {
     this.reportService.getAnalytics().subscribe({
       next: (res) => {
-        this.analytics = res.data;
+        if (res.success && res.data) {
+          this.analytics = res.data;
+        }
       },
       error: () => {
-        this.notify.showError('Failed to fetch live analytics data');
+        if (!this.analytics) {
+          this.notify.showError('Failed to load report analytics');
+        }
       }
     });
   }
@@ -227,44 +300,45 @@ export class ReportsComponent implements OnInit {
 
   exportMasterExcel(): void {
     this.applicationService.exportApplicantsToExcel().subscribe({
-      next: (blob) => {
+      next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Master_Placement_Analytics_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `Placement_Executive_Report_${Date.now()}.xlsx`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        this.notify.showSuccess('📊 Master Placement Ledger exported as Excel (.xlsx)!');
+        this.notify.showSuccess('Executive Excel report downloaded!');
       },
-      error: (err) => {
-        this.notify.showError(err?.error?.message || 'Excel export failed');
+      error: () => {
+        this.notify.showError('Failed to generate Excel report');
       }
     });
   }
 
   exportSummaryCSV(): void {
-    if (!this.analytics) {
-      this.notify.showError('No analytics data available to export');
-      return;
-    }
+    if (!this.analytics) return;
+    const rows = [
+      ['Metric', 'Value'],
+      ['Placement Rate (%)', this.analytics.placementRate || 0],
+      ['Total Students', this.analytics.totalStudents || 0],
+      ['Placed Students', this.analytics.placedStudents || 0],
+      ['Highest CTC (LPA)', this.analytics.highestPackage || 0],
+      ['Average CTC (LPA)', this.analytics.avgPackage || 0],
+      ['Total Companies', this.analytics.totalCompanies || 0],
+      ['Dream Offers (>2x CTC)', this.analytics.dreamOffersCount || 0]
+    ];
 
-    let csv = 'Branch,Total Students,Placed Students,Placement Rate (%),Avg Package (LPA)\n';
-    (this.analytics.branchWise || []).forEach(b => {
-      csv += `"${b.branch}",${b.total},${b.placed},${b.percentage}%,${b.avgPackage}\n`;
-    });
-
-    csv += '\nCompany Partner,Hires,Average Package (LPA)\n';
-    (this.analytics.companyWise || []).forEach(c => {
-      csv += `"${c.name}",${c.hires},${c.avgPackage}\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Placement_Summary_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    this.notify.showSuccess('Summary CSV downloaded successfully!');
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Placement_Summary_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    this.notify.showSuccess('Summary CSV downloaded!');
   }
 }
+

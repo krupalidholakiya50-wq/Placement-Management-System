@@ -209,7 +209,7 @@ exports.updateApplicationStatus = async (req, res, next) => {
       title: `${application.studentName} -> ${status}`,
       description: `Drive: ${application.job ? application.job.companyName : 'Placement Drive'} (${application.job ? application.job.title : 'Position'})`,
       actor: req.user ? req.user.name : 'Placement Cell',
-      actorRole: req.user ? req.user.role : 'recruiter',
+      actorRole: req.user ? req.user.role : 'company',
       targetBranch: application.branch || 'All Branches',
       relatedId: application._id
     });

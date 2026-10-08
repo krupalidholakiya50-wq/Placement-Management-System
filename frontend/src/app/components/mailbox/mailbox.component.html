@@ -1,0 +1,844 @@
+<div class="d-flex flex-column gap-4 pb-4">
+  <!-- Top Title Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+        <span class="badge badge-subtle-primary font-mono text-uppercase">Enterprise Mail Hub</span>
+        <span class="badge badge-subtle-success font-mono d-none d-sm-inline-flex align-items-center">
+          <i class="bi bi-shield-check me-1"></i> Verified Platform SMTP
+        </span>
+      </div>
+      <h1 class="page-main-title mb-1">Placement Mailbox & Direct Communications</h1>
+      <p class="body-text mb-0">Professional recruiter-student communication channel with real SMTP delivery and inbound conversation synchronization.</p>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <button (click)="refreshAll()" class="btn btn-secondary btn-sm" [disabled]="isLoading" title="Refresh mailbox messages">
+        <i class="bi bi-arrow-clockwise me-1" [class.spin-icon]="isLoading"></i> Refresh
+      </button>
+
+      <button *ngIf="unreadCount > 0 && activeTab === 'inbox'" (click)="markAllAsRead()" class="btn btn-secondary btn-sm" [disabled]="isLoading">
+        <i class="bi bi-check2-all me-1"></i> Mark All Read
+      </button>
+
+      <button (click)="openSimulateModal()" class="btn btn-outline-secondary btn-sm text-info" title="Test inbound external email reply synchronization">
+        <i class="bi bi-cloud-arrow-down me-1"></i> Test Inbound Reply
+      </button>
+
+      <button (click)="openComposeModal()" class="btn btn-primary btn-sm shadow-sm">
+        <i class="bi bi-pencil-square me-1"></i> Compose Email
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Metrics Ribbon -->
+  <div class="row g-3">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card-enterprise cursor-pointer" (click)="switchTab('inbox')">
+        <div class="stat-icon icon-blue"><i class="bi bi-inbox"></i></div>
+        <div class="stat-content">
+          <div class="stat-label">Inbox Total</div>
+          <div class="stat-value text-primary">{{ emails.length }}</div>
+          <div class="stat-meta">Received Communications</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card-enterprise cursor-pointer" (click)="switchTab('inbox'); setFilterReadStatus('UNREAD')">
+        <div class="stat-icon icon-danger"><i class="bi bi-envelope-exclamation"></i></div>
+        <div class="stat-content">
+          <div class="stat-label">Unread Messages</div>
+          <div class="stat-value text-danger">{{ unreadCount }}</div>
+          <div class="stat-meta">Pending Review</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card-enterprise cursor-pointer" (click)="switchTab('threads')">
+        <div class="stat-icon icon-emerald"><i class="bi bi-chat-dots"></i></div>
+        <div class="stat-content">
+          <div class="stat-label">Conversations</div>
+          <div class="stat-value text-success">{{ threads.length }}</div>
+          <div class="stat-meta">Active Multi-Message Threads</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="stat-card-enterprise cursor-pointer" (click)="switchTab('sent')">
+        <div class="stat-icon icon-cyan"><i class="bi bi-send"></i></div>
+        <div class="stat-content">
+          <div class="stat-label">Outbound Sent</div>
+          <div class="stat-value">{{ sentEmails.length }}</div>
+          <div class="stat-meta">Dispatched Messages</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Split-Pane Mailbox Card -->
+  <div class="enterprise-card p-0 overflow-hidden shadow-sm">
+    <!-- Toolbar Strip -->
+    <div class="card-header-clean bg-slate-50 border-bottom px-3 px-sm-4 py-2.5">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2.5 w-100">
+        <!-- Folders Tabs -->
+        <div class="btn-group flex-wrap" role="group">
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="activeTab === 'inbox'"
+            [class.btn-secondary]="activeTab !== 'inbox'"
+            (click)="switchTab('inbox')"
+          >
+            <i class="bi bi-inbox me-1"></i> Inbox
+            <span *ngIf="unreadCount > 0" class="badge bg-danger text-white rounded-pill ms-1 font-mono" style="font-size: 0.65rem;">
+              {{ unreadCount }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="activeTab === 'threads'"
+            [class.btn-secondary]="activeTab !== 'threads'"
+            (click)="switchTab('threads')"
+          >
+            <i class="bi bi-chat-left-text me-1"></i> Threads ({{ threads.length }})
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="activeTab === 'sent'"
+            [class.btn-secondary]="activeTab !== 'sent'"
+            (click)="switchTab('sent')"
+          >
+            <i class="bi bi-send me-1"></i> Sent ({{ sentEmails.length }})
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="activeTab === 'drafts'"
+            [class.btn-secondary]="activeTab !== 'drafts'"
+            (click)="switchTab('drafts')"
+          >
+            <i class="bi bi-file-earmark-text me-1"></i> Drafts ({{ drafts.length }})
+          </button>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1 justify-content-lg-end">
+          <!-- Read/Unread Filter (For Inbox/Threads) -->
+          <div *ngIf="activeTab === 'inbox' || activeTab === 'threads'" class="btn-group btn-group-sm" role="group">
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm py-1 px-2"
+              [class.active]="filterReadStatus === 'ALL'"
+              (click)="setFilterReadStatus('ALL')"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm py-1 px-2"
+              [class.active]="filterReadStatus === 'UNREAD'"
+              (click)="setFilterReadStatus('UNREAD')"
+            >
+              Unread
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="input-group input-group-sm" style="min-width: 0; max-width: 320px;">
+            <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-search"></i></span>
+            <input
+              type="text"
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="applyFilters()"
+              class="form-control border-start-0"
+              placeholder="Search by subject, email, content..."
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2-Pane Split Container -->
+    <div class="mailbox-split-pane">
+      <!-- Left Pane: List View -->
+      <div
+        class="list-pane"
+        [class.d-none]="(selectedEmail || selectedThread || selectedDraft) && isMobileView"
+      >
+        <div *ngIf="isLoading" class="p-5 text-center text-muted">
+          <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+          <div class="body-text small">Loading communications...</div>
+        </div>
+
+        <!-- Tab: Threads View -->
+        <ng-container *ngIf="!isLoading && activeTab === 'threads'">
+          <div *ngIf="displayedThreads.length === 0" class="p-5 text-center text-muted">
+            <div class="saas-empty-state py-3">
+              <i class="bi bi-chat-left-dots empty-icon"></i>
+              <div class="empty-title">No conversation threads</div>
+              <div class="empty-desc">Send or receive an email to begin a threaded recruiter-student conversation.</div>
+            </div>
+          </div>
+
+          <div class="list-group list-group-flush" *ngIf="displayedThreads.length > 0">
+            <div
+              *ngFor="let thread of displayedThreads"
+              (click)="selectThread(thread)"
+              class="list-group-item list-group-item-action p-3 cursor-pointer border-bottom transition-item"
+              [class.active-item]="selectedThread?.threadId === thread.threadId"
+              [class.border-start-unread]="thread.hasUnread"
+            >
+              <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+                <div class="d-flex align-items-center gap-1.5 min-w-0 flex-grow-1">
+                  <span *ngIf="thread.hasUnread" class="unread-dot flex-shrink-0"></span>
+                  <span class="text-slate-900 fw-semibold text-truncate d-inline-block min-w-0" style="font-size: 0.85rem;">
+                    {{ thread.lastSenderName || 'Recruiter / Student' }}
+                  </span>
+                </div>
+                <span class="meta-text text-muted font-mono flex-shrink-0 ms-1" style="font-size: 0.72rem;">
+                  {{ thread.lastMessageAt | date:'shortTime' }}
+                </span>
+              </div>
+
+              <div class="text-slate-900 fw-semibold text-truncate mb-1 min-w-0" style="font-size: 0.82rem;">
+                {{ thread.subject }}
+              </div>
+
+              <p class="text-muted small text-truncate mb-1.5 min-w-0" style="font-size: 0.76rem;">
+                {{ thread.lastMessageBody || 'No preview available' }}
+              </p>
+
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <span class="badge badge-subtle-secondary font-mono" style="font-size: 0.65rem;">
+                  {{ thread.type }}
+                </span>
+                <span class="badge bg-slate-100 text-slate-700 border font-mono" style="font-size: 0.65rem;">
+                  <i class="bi bi-chat-dots me-1"></i> {{ thread.messageCount }} message{{ thread.messageCount > 1 ? 's' : '' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Tab: Drafts View -->
+        <ng-container *ngIf="!isLoading && activeTab === 'drafts'">
+          <div *ngIf="displayedDrafts.length === 0" class="p-5 text-center text-muted">
+            <div class="saas-empty-state py-3">
+              <i class="bi bi-file-earmark-text empty-icon"></i>
+              <div class="empty-title">No saved drafts</div>
+              <div class="empty-desc">You don't have any unsent drafts. Use "Save Draft" in the compose modal to save your progress.</div>
+            </div>
+          </div>
+
+          <div class="list-group list-group-flush" *ngIf="displayedDrafts.length > 0">
+            <div
+              *ngFor="let draft of displayedDrafts"
+              (click)="selectDraft(draft)"
+              class="list-group-item list-group-item-action p-3 cursor-pointer border-bottom transition-item"
+              [class.active-item]="selectedDraft?._id === draft._id"
+            >
+              <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+                <span class="badge badge-subtle-warning font-mono flex-shrink-0" style="font-size: 0.65rem;">DRAFT</span>
+                <span class="meta-text text-muted font-mono flex-shrink-0 ms-1" style="font-size: 0.72rem;">
+                  {{ draft.updatedAt || draft.createdAt | date:'shortTime' }}
+                </span>
+              </div>
+
+              <div class="text-slate-900 fw-semibold text-truncate mb-1 min-w-0" style="font-size: 0.82rem;">
+                {{ draft.subject || '(Draft - No Subject)' }}
+              </div>
+
+              <p class="text-muted small text-truncate mb-1 min-w-0" style="font-size: 0.76rem;">
+                <span class="text-slate-700 fw-medium">To: {{ draft.recipientEmail || draft.recipient || 'Not specified' }}</span> — {{ draft.body || 'Empty message' }}
+              </p>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Tab: Inbox / Sent View -->
+        <ng-container *ngIf="!isLoading && activeTab !== 'threads' && activeTab !== 'drafts'">
+          <div *ngIf="displayedEmails.length === 0" class="p-5 text-center text-muted">
+            <div class="saas-empty-state py-3">
+              <i class="bi bi-inbox empty-icon"></i>
+              <div class="empty-title">No messages found</div>
+              <div class="empty-desc">Your {{ activeTab }} folder has no records matching your current filter.</div>
+            </div>
+          </div>
+
+          <div class="list-group list-group-flush" *ngIf="displayedEmails.length > 0">
+            <div
+              *ngFor="let email of displayedEmails"
+              (click)="selectEmail(email)"
+              class="list-group-item list-group-item-action p-3 cursor-pointer border-bottom transition-item"
+              [class.active-item]="selectedEmail?._id === email._id"
+              [class.fw-bold]="!email.isRead && activeTab === 'inbox'"
+              [class.border-start-unread]="!email.isRead && activeTab === 'inbox'"
+            >
+              <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+                <div class="d-flex align-items-center gap-1.5 min-w-0 flex-grow-1">
+                  <span *ngIf="!email.isRead && activeTab === 'inbox'" class="unread-dot flex-shrink-0"></span>
+                  <span class="text-slate-900 text-truncate d-inline-block min-w-0" style="font-size: 0.85rem;">
+                    {{ activeTab === 'inbox' ? (email.senderName || email.sender || 'Sender') : (email.recipientName || email.recipient || 'Recipient') }}
+                  </span>
+                </div>
+                <span class="meta-text text-muted font-mono flex-shrink-0 ms-1" style="font-size: 0.72rem;">
+                  {{ email.createdAt | date:'shortTime' }}
+                </span>
+              </div>
+
+              <div class="text-slate-900 text-truncate mb-1 min-w-0" [class.fw-bold]="!email.isRead" style="font-size: 0.82rem;">
+                {{ email.subject }}
+              </div>
+
+              <p class="text-muted small text-truncate mb-1.5 min-w-0" style="font-size: 0.76rem;">
+                {{ email.body || 'No preview available' }}
+              </p>
+
+              <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                <span class="badge badge-subtle-secondary font-mono" style="font-size: 0.65rem;">
+                  {{ email.type || 'Direct Message' }}
+                </span>
+
+                <span *ngIf="email.direction === 'inbound'" class="badge badge-subtle-teal font-mono" style="font-size: 0.65rem;">
+                  <i class="bi bi-arrow-down-left"></i> Inbound
+                </span>
+
+                <span *ngIf="email.attachments && email.attachments.length > 0" class="badge bg-slate-100 text-slate-600 border font-mono" style="font-size: 0.65rem;">
+                  <i class="bi bi-paperclip"></i> {{ email.attachments.length }}
+                </span>
+
+                <span class="badge font-mono" [ngClass]="getStatusBadgeClass(email.status, email.deliveryStatus)" style="font-size: 0.65rem;">
+                  {{ email.deliveryStatus || email.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Right Pane: Message / Thread / Draft Reader -->
+      <div
+        class="reader-pane"
+        [class.d-none]="!selectedEmail && !selectedThread && !selectedDraft && isMobileView"
+      >
+        <!-- Mobile Back Button -->
+        <div *ngIf="(selectedEmail || selectedThread || selectedDraft)" class="d-lg-none p-2.5 border-bottom bg-slate-50 d-flex align-items-center">
+          <button (click)="selectedEmail = null; selectedThread = null; selectedDraft = null" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Message List
+          </button>
+        </div>
+
+        <!-- THREADS READER VIEW -->
+        <div *ngIf="activeTab === 'threads' && selectedThread" class="p-3 p-sm-4 d-flex flex-column h-100 min-w-0">
+          <div class="border-bottom pb-3 mb-3 min-w-0">
+            <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2 min-w-0">
+              <h2 class="reader-header-subject">{{ selectedThread.subject }}</h2>
+              <span class="badge badge-subtle-primary font-mono flex-shrink-0">{{ threadMessages.length }} MESSAGES IN THREAD</span>
+            </div>
+            <div class="reader-meta-card mt-2">
+              <div class="reader-meta-row">
+                <span class="reader-meta-label">Participants:</span>
+                <span class="reader-meta-value">{{ selectedThread.participants.join(', ') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chronological Messages Stream -->
+          <div class="flex-grow-1 d-flex flex-column gap-3 mb-4 min-w-0">
+            <div
+              *ngFor="let msg of threadMessages"
+              class="p-3.5 rounded-12 border min-w-0"
+              [class.bg-slate-50]="msg.senderEmail !== currentUserEmail"
+              [class.border-primary]="msg.senderEmail === currentUserEmail"
+              [class.bg-white]="msg.senderEmail === currentUserEmail"
+            >
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2 min-w-0">
+                <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                  <div class="avatar-circle flex-shrink-0">
+                    {{ (msg.senderName || msg.sender || 'U').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="min-w-0 flex-grow-1 text-break">
+                    <strong class="text-slate-900 small d-block text-break">{{ msg.senderName || msg.sender }}</strong>
+                    <span class="text-muted font-mono text-break" style="font-size: 0.7rem;">&lt;{{ msg.senderEmail || 'user@placement.edu' }}&gt;</span>
+                  </div>
+                </div>
+
+                <div class="text-end font-mono text-muted small flex-shrink-0" style="font-size: 0.72rem;">
+                  <span *ngIf="msg.direction === 'inbound'" class="badge badge-subtle-teal font-mono me-1" style="font-size: 0.62rem;">
+                    EXTERNAL INBOUND
+                  </span>
+                  <span class="badge font-mono me-1" [ngClass]="getStatusBadgeClass(msg.status, msg.deliveryStatus)" style="font-size: 0.62rem;">
+                    {{ msg.deliveryStatus || msg.status }}
+                  </span>
+                  {{ msg.createdAt | date:'medium' }}
+                </div>
+              </div>
+
+              <!-- Message Body -->
+              <div class="body-text small lh-base mb-2 email-body-content text-break">
+                {{ msg.body }}
+              </div>
+
+              <!-- Attachments if any -->
+              <div *ngIf="msg.attachments && msg.attachments.length > 0" class="mt-2 pt-2 border-top">
+                <div class="meta-text text-muted mb-1.5 fw-semibold"><i class="bi bi-paperclip me-1"></i> Attachments ({{ msg.attachments.length }}):</div>
+                <div class="d-flex flex-wrap gap-2">
+                  <a
+                    *ngFor="let att of msg.attachments"
+                    [href]="att.url"
+                    target="_blank"
+                    class="badge bg-slate-100 text-slate-800 border p-2 text-decoration-none attachment-chip hover-bg"
+                    [title]="att.filename"
+                  >
+                    <i class="bi bi-file-earmark-arrow-down text-primary flex-shrink-0"></i>
+                    <span class="attachment-chip-name">{{ att.filename }}</span>
+                    <span class="text-muted font-mono flex-shrink-0" style="font-size: 0.65rem;">({{ formatFileSize(att.size) }})</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Thread Reply Action Strip -->
+          <div class="border-top pt-3 mt-auto d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <button (click)="replyToThread(selectedThread)" class="btn btn-primary btn-sm px-3">
+              <i class="bi bi-reply me-1"></i> Reply to Thread
+            </button>
+            <button (click)="selectedThread = null" class="btn btn-secondary btn-sm">
+              Close
+            </button>
+          </div>
+        </div>
+
+        <!-- DRAFTS READER VIEW -->
+        <div *ngIf="activeTab === 'drafts' && selectedDraft" class="p-3 p-sm-4 d-flex flex-column h-100 min-w-0">
+          <div class="border-bottom pb-3 mb-3 min-w-0">
+            <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2 min-w-0">
+              <h2 class="reader-header-subject">{{ selectedDraft.subject || '(Draft - No Subject)' }}</h2>
+              <span class="badge badge-subtle-warning font-mono flex-shrink-0">DRAFT</span>
+            </div>
+            <div class="reader-meta-card mt-2">
+              <div class="reader-meta-row">
+                <span class="reader-meta-label">To:</span>
+                <span class="reader-meta-value">{{ selectedDraft.recipientEmail || selectedDraft.recipient || 'Not specified' }}</span>
+              </div>
+              <div class="reader-meta-row mt-1">
+                <span class="reader-meta-label">Last Saved:</span>
+                <span class="text-muted font-mono small">{{ selectedDraft.updatedAt || selectedDraft.createdAt | date:'medium' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Draft Body -->
+          <div class="flex-grow-1 body-text py-2 email-body-content text-break">
+            {{ selectedDraft.body || 'No message content in this draft.' }}
+          </div>
+
+          <!-- Attachments if any -->
+          <div *ngIf="selectedDraft.attachments && selectedDraft.attachments.length > 0" class="mt-3 pt-3 border-top">
+            <div class="meta-text text-muted mb-2 fw-semibold"><i class="bi bi-paperclip me-1"></i> Attachments:</div>
+            <div class="d-flex flex-wrap gap-2">
+              <span *ngFor="let att of selectedDraft.attachments" class="badge bg-slate-100 text-slate-800 border p-2 attachment-chip">
+                <i class="bi bi-file-earmark text-primary flex-shrink-0"></i>
+                <span class="attachment-chip-name">{{ att.filename }}</span>
+                <span class="text-muted font-mono flex-shrink-0" style="font-size: 0.65rem;">({{ formatFileSize(att.size) }})</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Draft Actions -->
+          <div class="border-top pt-3 mt-auto d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <button (click)="discardDraft(selectedDraft)" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-trash me-1"></i> Discard Draft
+            </button>
+            <div class="d-flex gap-2 flex-wrap">
+              <button (click)="editDraft(selectedDraft)" class="btn btn-primary btn-sm px-3">
+                <i class="bi bi-pencil-square me-1"></i> Resume Editing Draft
+              </button>
+              <button (click)="selectedDraft = null" class="btn btn-secondary btn-sm">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SINGLE EMAIL READER VIEW (INBOX & SENT) -->
+        <div *ngIf="activeTab !== 'threads' && activeTab !== 'drafts' && selectedEmail" class="p-3 p-sm-4 d-flex flex-column h-100 min-w-0">
+          <div class="border-bottom pb-3 mb-3 min-w-0">
+            <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2 min-w-0">
+              <h2 class="reader-header-subject">{{ selectedEmail.subject }}</h2>
+              <div class="d-flex align-items-center gap-1.5 flex-shrink-0 flex-wrap">
+                <span *ngIf="selectedEmail.direction === 'inbound'" class="badge badge-subtle-teal font-mono">INBOUND REPLY</span>
+                <span class="badge badge-subtle-primary font-mono">{{ selectedEmail.type || 'Direct Message' }}</span>
+                <span class="badge font-mono" [ngClass]="getStatusBadgeClass(selectedEmail.status, selectedEmail.deliveryStatus)">
+                  {{ selectedEmail.deliveryStatus || selectedEmail.status }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Sender & Recipient Metadata Card -->
+            <div class="reader-meta-card mt-2">
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 min-w-0">
+                <div class="min-w-0 flex-grow-1">
+                  <!-- From Row -->
+                  <div class="reader-meta-row mb-1">
+                    <span class="reader-meta-label">From:</span>
+                    <span class="reader-meta-value">{{ selectedEmail.senderName || selectedEmail.sender }}</span>
+                    <span class="reader-meta-email">&lt;{{ selectedEmail.senderEmail || selectedEmail.sender }}&gt;</span>
+                  </div>
+                  <!-- To Row -->
+                  <div class="reader-meta-row mb-1">
+                    <span class="reader-meta-label">To:</span>
+                    <span class="reader-meta-value">{{ selectedEmail.recipientName || selectedEmail.recipient }}</span>
+                    <span class="reader-meta-email">&lt;{{ selectedEmail.recipientEmail || selectedEmail.recipient }}&gt;</span>
+                  </div>
+                  <!-- CC Row (if present) -->
+                  <div *ngIf="selectedEmail.cc && selectedEmail.cc.length > 0" class="reader-meta-row">
+                    <span class="reader-meta-label">CC:</span>
+                    <span class="reader-meta-email">{{ selectedEmail.cc.join(', ') }}</span>
+                  </div>
+                </div>
+                <div class="font-mono text-muted small flex-shrink-0">
+                  {{ selectedEmail.createdAt | date:'medium' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Message Body -->
+          <div class="flex-grow-1 body-text py-2 email-body-content text-break">
+            {{ selectedEmail.body }}
+          </div>
+
+          <!-- Attachments section -->
+          <div *ngIf="selectedEmail.attachments && selectedEmail.attachments.length > 0" class="mt-3 pt-3 border-top">
+            <div class="meta-text text-muted mb-2 fw-semibold"><i class="bi bi-paperclip me-1"></i> Attachments ({{ selectedEmail.attachments.length }}):</div>
+            <div class="d-flex flex-wrap gap-2">
+              <a
+                *ngFor="let att of selectedEmail.attachments"
+                [href]="att.url"
+                target="_blank"
+                class="badge bg-slate-100 text-slate-800 border p-2 text-decoration-none attachment-chip hover-bg"
+                [title]="att.filename"
+              >
+                <i class="bi bi-file-earmark-arrow-down text-primary flex-shrink-0"></i>
+                <span class="attachment-chip-name">{{ att.filename }}</span>
+                <span class="text-muted font-mono flex-shrink-0" style="font-size: 0.65rem;">({{ formatFileSize(att.size) }})</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Actions Footer -->
+          <div class="border-top pt-3 mt-auto d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="meta-text text-muted font-mono small text-break min-w-0">
+              Thread: {{ selectedEmail.threadId || selectedEmail._id }}
+            </span>
+            <div class="d-flex gap-2 flex-wrap">
+              <button (click)="replyToCurrent()" class="btn btn-primary btn-sm">
+                <i class="bi bi-reply me-1"></i> Reply
+              </button>
+              <button (click)="forwardCurrent()" class="btn btn-secondary btn-sm">
+                <i class="bi bi-forward me-1"></i> Forward
+              </button>
+              <button (click)="selectedEmail = null" class="btn btn-secondary btn-sm">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- EMPTY STATE (NOTHING SELECTED) -->
+        <div *ngIf="!selectedEmail && !selectedThread && !selectedDraft" class="p-5 my-auto text-center text-muted">
+          <div class="saas-empty-state py-5">
+            <i class="bi bi-envelope-open empty-icon"></i>
+            <div class="empty-title">Select a message or conversation to view</div>
+            <div class="empty-desc">Choose an email or conversation thread from the left pane to read the full communication history.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPOSE MODAL -->
+  <div *ngIf="isComposeModalOpen" class="modal-backdrop-custom d-flex align-items-center justify-content-center p-2 p-sm-3">
+    <div class="modal-dialog-custom modal-lg bg-white rounded-12 shadow-2xl overflow-hidden animate-fadeIn" style="max-width: 760px; width: 100%;">
+      <div class="modal-header border-bottom px-3 px-sm-4 py-3 bg-slate-50 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold text-slate-900 mb-0 d-flex align-items-center text-break">
+          <i class="bi bi-pencil-square text-primary me-2 flex-shrink-0"></i>
+          <span>{{ isReplyMode ? 'Reply to Message' : isForwardMode ? 'Forward Email' : 'Compose Placement Email' }}</span>
+        </h5>
+        <button type="button" class="btn-close flex-shrink-0" (click)="closeComposeModal()"></button>
+      </div>
+      <div class="modal-body p-3 p-sm-4" style="max-height: 75vh; overflow-y: auto;">
+        <!-- Sender Identity Preview -->
+        <div class="mb-3 p-2.5 bg-slate-50 border rounded-8 d-flex justify-content-between align-items-center small flex-wrap gap-1">
+          <div class="text-break min-w-0">
+            <span class="text-muted">From: </span>
+            <strong class="text-slate-900 text-break">{{ currentUserName }}</strong>
+            <span class="text-muted font-mono ms-1 text-break">&lt;{{ currentUserEmail }}&gt;</span>
+          </div>
+          <span class="badge badge-subtle-primary font-mono text-uppercase flex-shrink-0">{{ userRole }}</span>
+        </div>
+
+        <!-- Recipient Input + Directory Auto-Complete Dropdown -->
+        <div class="mb-3 position-relative">
+          <label class="form-label fw-semibold text-slate-800">Recipient Email (To) *</label>
+          <div class="input-group">
+            <input
+              type="email"
+              [(ngModel)]="composeTo"
+              (input)="filterContacts()"
+              (focus)="showContactSuggestions = true"
+              class="form-control"
+              placeholder="Enter recipient email or search directory..."
+            />
+            <button class="btn btn-outline-secondary" type="button" (click)="openDirectoryModal()">
+              <i class="bi bi-person-lines-fill me-1"></i> Directory Picker
+            </button>
+          </div>
+
+          <!-- Directory Search Suggestions Dropdown -->
+          <div
+            *ngIf="showContactSuggestions && filteredContacts.length > 0"
+            class="position-absolute w-100 bg-white border rounded-8 shadow-xl mt-1 p-1 z-3"
+            style="max-height: 220px; overflow-y: auto;"
+          >
+            <div
+              *ngFor="let contact of filteredContacts"
+              (click)="selectContact(contact)"
+              class="p-2 border-bottom cursor-pointer rounded-6 hover-bg d-flex justify-content-between align-items-center gap-2"
+            >
+              <div class="min-w-0 flex-grow-1 text-break">
+                <strong class="text-slate-900 small d-block text-break">{{ contact.name }}</strong>
+                <span class="text-muted font-mono text-break" style="font-size: 0.72rem;">{{ contact.email }}</span>
+              </div>
+              <span class="badge badge-subtle-secondary font-mono flex-shrink-0 text-nowrap" style="font-size: 0.65rem;">{{ contact.subtitle }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CC (Optional) -->
+        <div class="mb-3">
+          <label class="form-label text-slate-700">CC (Optional)</label>
+          <input type="text" [(ngModel)]="composeCc" class="form-control" placeholder="Optional CC email addresses, comma separated..." />
+        </div>
+
+        <!-- Subject -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-slate-800">Subject *</label>
+          <input type="text" [(ngModel)]="composeSubject" class="form-control" placeholder="Enter subject line..." />
+        </div>
+
+        <!-- Category -->
+        <div class="mb-3">
+          <label class="form-label text-slate-700">Communication Category</label>
+          <select [(ngModel)]="composeCategory" class="form-select">
+            <option value="Direct Message">Direct 1-on-1 Communication</option>
+            <option value="Interview Invitation">Interview Invitation</option>
+            <option value="Placement Drive Call">Placement Drive Call</option>
+            <option value="Offer Letter Followup">Offer Letter Followup</option>
+            <option value="Candidate Query">Candidate Query</option>
+            <option value="Official Notice">Official Notice</option>
+          </select>
+        </div>
+
+        <!-- Message Body -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-slate-800">Message Body *</label>
+          <textarea
+            [(ngModel)]="composeBody"
+            rows="6"
+            class="form-control font-sans"
+            placeholder="Write your email message..."
+          ></textarea>
+        </div>
+
+        <!-- Attachments Section -->
+        <div class="mb-3">
+          <label class="form-label text-slate-700 fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-1">
+            <span>Attachments (Optional)</span>
+            <span class="text-muted font-mono small">Max 10MB (PDF, DOCX, Excel, Images)</span>
+          </label>
+
+          <!-- Upload trigger -->
+          <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+            <label class="btn btn-outline-secondary btn-sm cursor-pointer mb-0">
+              <i class="bi bi-paperclip me-1"></i> Attach File
+              <input type="file" (change)="onFileSelected($event)" class="d-none" />
+            </label>
+            <span *ngIf="isUploadingAttachment" class="small text-muted">
+              <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Uploading attachment...
+            </span>
+          </div>
+
+          <!-- Attachment Pills List -->
+          <div *ngIf="composeAttachments.length > 0" class="d-flex flex-wrap gap-2 p-2 bg-slate-50 border rounded-8">
+            <div *ngFor="let att of composeAttachments; let i = index" class="badge bg-white text-slate-800 border p-2 attachment-chip">
+              <i class="bi bi-file-earmark-text text-primary flex-shrink-0"></i>
+              <span class="attachment-chip-name" [title]="att.filename">{{ att.filename }}</span>
+              <span class="text-muted font-mono small flex-shrink-0">({{ formatFileSize(att.size) }})</span>
+              <button type="button" class="btn-close ms-1 flex-shrink-0" style="font-size: 0.6rem;" (click)="removeAttachment(i)"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Actions Strip -->
+        <div class="mt-4 text-end border-top pt-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+          <span class="meta-text text-muted text-start">
+            <i class="bi bi-shield-check text-success me-1"></i> Dispatches via SMTP with authenticated Reply-To
+          </span>
+          <div class="d-flex gap-2 justify-content-end flex-wrap">
+            <button type="button" class="btn btn-secondary" (click)="saveCurrentDraft()">
+              <i class="bi bi-save me-1"></i> Save Draft
+            </button>
+            <button type="button" class="btn btn-outline-secondary" (click)="closeComposeModal()">
+              Cancel
+            </button>
+            <button type="button" (click)="sendEmailDispatch()" class="btn btn-primary px-4" [disabled]="isSending || isUploadingAttachment">
+              <span *ngIf="isSending" class="spinner-border spinner-border-sm me-1"></span>
+              Send Official Email ➔
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECIPIENT DIRECTORY MODAL -->
+  <div *ngIf="isDirectoryModalOpen" class="modal-backdrop-custom d-flex align-items-center justify-content-center p-2 p-sm-3">
+    <div class="modal-dialog-custom modal-lg bg-white rounded-12 shadow-2xl overflow-hidden animate-fadeIn" style="max-width: 680px; width: 100%;">
+      <div class="modal-header border-bottom px-3 px-sm-4 py-3 bg-slate-50 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold text-slate-900 mb-0 d-flex align-items-center text-break">
+          <i class="bi bi-person-lines-fill text-primary me-2 flex-shrink-0"></i>
+          <span>Campus Directory — Select Recipient</span>
+        </h5>
+        <button type="button" class="btn-close flex-shrink-0" (click)="closeDirectoryModal()"></button>
+      </div>
+      <div class="modal-body p-3 p-sm-4">
+        <!-- Directory Tabs -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+          <div class="btn-group btn-group-sm flex-wrap" role="group">
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="directoryTab === 'students'"
+              [class.btn-secondary]="directoryTab !== 'students'"
+              (click)="directoryTab = 'students'"
+            >
+              Students ({{ getStudentContactsCount() }})
+            </button>
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="directoryTab === 'companies'"
+              [class.btn-secondary]="directoryTab !== 'companies'"
+              (click)="directoryTab = 'companies'"
+            >
+              Companies & HR ({{ getCompanyContactsCount() }})
+            </button>
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="directoryTab === 'admins'"
+              [class.btn-secondary]="directoryTab !== 'admins'"
+              (click)="directoryTab = 'admins'"
+            >
+              TPO Office ({{ getAdminContactsCount() }})
+            </button>
+          </div>
+
+          <!-- Directory search -->
+          <div class="input-group input-group-sm" style="min-width: 0; max-width: 220px;">
+            <input type="text" [(ngModel)]="directorySearch" class="form-control" placeholder="Filter directory..." />
+          </div>
+        </div>
+
+        <!-- Directory List -->
+        <div class="list-group list-group-flush border rounded-8 overflow-hidden" style="max-height: 360px; overflow-y: auto;">
+          <div *ngIf="getDirectoryFilteredContacts().length === 0" class="p-4 text-center text-muted small">
+            No contacts match the directory search.
+          </div>
+          <div
+            *ngFor="let contact of getDirectoryFilteredContacts()"
+            (click)="chooseDirectoryContact(contact)"
+            class="list-group-item list-group-item-action p-3 cursor-pointer d-flex justify-content-between align-items-center gap-2 transition-item"
+          >
+            <div class="d-flex align-items-center gap-2.5 min-w-0 flex-grow-1">
+              <div class="avatar-circle flex-shrink-0">
+                {{ contact.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="min-w-0 flex-grow-1 text-break">
+                <strong class="text-slate-900 small d-block text-break">{{ contact.name }}</strong>
+                <span class="text-muted font-mono text-break" style="font-size: 0.75rem;">{{ contact.email }}</span>
+              </div>
+            </div>
+            <div class="text-end flex-shrink-0">
+              <span class="badge badge-subtle-secondary font-mono mb-1 d-block text-nowrap" style="font-size: 0.65rem;">{{ contact.subtitle }}</span>
+              <button type="button" class="btn btn-outline-primary btn-xs py-0.5 px-2 text-nowrap" style="font-size: 0.7rem;">
+                Select ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top px-3 px-sm-4 py-2.5 bg-slate-50">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closeDirectoryModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INBOUND SIMULATION DEV MODAL -->
+  <div *ngIf="isSimulateModalOpen" class="modal-backdrop-custom d-flex align-items-center justify-content-center p-2 p-sm-3">
+    <div class="modal-dialog-custom bg-white rounded-12 shadow-2xl overflow-hidden animate-fadeIn" style="max-width: 600px; width: 100%;">
+      <div class="modal-header border-bottom px-3 px-sm-4 py-3 bg-slate-50 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold text-slate-900 mb-0 d-flex align-items-center text-break">
+          <i class="bi bi-cloud-arrow-down text-info me-2 flex-shrink-0"></i>
+          <span>Simulate External Inbound Email Reply</span>
+        </h5>
+        <button type="button" class="btn-close flex-shrink-0" (click)="closeSimulateModal()"></button>
+      </div>
+      <div class="modal-body p-3 p-sm-4" style="max-height: 75vh; overflow-y: auto;">
+        <div class="alert alert-info py-2 px-3 small mb-3 text-break">
+          <i class="bi bi-info-circle me-1"></i>
+          This developer tool simulates a student or recruiter replying from their external email client (Gmail, Outlook, Apple Mail) into the placement portal's inbound synchronization endpoint.
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-slate-800">External Sender Email (From)</label>
+          <input type="text" [(ngModel)]="simulateFrom" class="form-control" placeholder="candidate@gmail.com" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-slate-800">Recipient (Portal User Email)</label>
+          <input type="text" [(ngModel)]="simulateTo" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-slate-800">Subject</label>
+          <input type="text" [(ngModel)]="simulateSubject" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-slate-800">Reply Message Body</label>
+          <textarea [(ngModel)]="simulateBody" rows="4" class="form-control"></textarea>
+        </div>
+
+        <div class="text-end border-top pt-3 d-flex justify-content-end gap-2 flex-wrap">
+          <button type="button" class="btn btn-secondary" (click)="closeSimulateModal()">Cancel</button>
+          <button type="button" (click)="submitSimulatedInbound()" class="btn btn-info text-white px-3">
+            Inject Inbound Reply ➔
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

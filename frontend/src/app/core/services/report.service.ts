@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject, tap, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AnalyticsData {
@@ -13,6 +13,9 @@ export interface AnalyticsData {
   totalJobs: number;
   totalCompanies: number;
   totalOffers: number;
+  totalAssessments?: number;
+  totalAssessmentAttempts?: number;
+  assessmentPassRate?: number;
   placementRate: number;
   highestPackage: number;
   avgPackage: number;
@@ -52,7 +55,22 @@ export class ReportService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/reports`;
 
-  getAnalytics(): Observable<{ success: boolean; data: AnalyticsData }> {
-    return this.http.get<{ success: boolean; data: AnalyticsData }>(`${this.apiUrl}/analytics`);
+  // Persistent live analytics cache
+  private analyticsSubject = new BehaviorSubject<AnalyticsData | null>(null);
+  public analytics$ = this.analyticsSubject.asObservable();
+
+  getAnalytics(forceRefresh: boolean = false): Observable<{ success: boolean; data: AnalyticsData }> {
+    return this.http.get<{ success: boolean; data: AnalyticsData }>(`${this.apiUrl}/analytics`).pipe(
+      tap((res) => {
+        if (res && res.success && res.data) {
+          this.analyticsSubject.next(res.data);
+        }
+      })
+    );
+  }
+
+  getCurrentAnalytics(): AnalyticsData | null {
+    return this.analyticsSubject.getValue();
   }
 }
+

@@ -1,7 +1,10 @@
 const Offer = require('../models/Offer');
 const Student = require('../models/Student');
 const Application = require('../models/Application');
+const User = require('../models/User');
+const EmailLog = require('../models/EmailLog');
 const { logActivity } = require('./activityController');
+const { createNotification } = require('./notificationController');
 
 // @desc    STEP 5: Get logged in student's Offer Letters & LOIs
 // @route   GET /api/offers/my
@@ -72,6 +75,21 @@ exports.respondToOffer = async (req, res, next) => {
         targetBranch: student.branch || 'All Branches',
         relatedId: offer._id
       });
+
+      // Notify Admin
+      const adminUsers = await User.find({ role: 'admin' });
+      for (const admin of adminUsers) {
+        await createNotification({
+          recipient: admin._id,
+          recipientRole: 'admin',
+          title: `Offer Accepted: ${student.fullName}`,
+          message: `${student.fullName} has accepted the placement offer from ${offer.companyName} (${offer.packageOffered} LPA).`,
+          type: 'OFFER_EXTENDED',
+          relatedEntity: 'Offer',
+          relatedEntityId: offer._id,
+          link: '/reports'
+        });
+      }
 
       return res.status(200).json({
         success: true,

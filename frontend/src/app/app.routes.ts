@@ -10,6 +10,8 @@ import { ReportsComponent } from './components/reports/reports.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { NoticesComponent } from './components/notices/notices.component';
+import { AssessmentsComponent } from './components/assessments/assessments.component';
+import { MailboxComponent } from './components/mailbox/mailbox.component';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { AppLayoutComponent } from './layout/app-layout/app-layout.component';
 import { authGuard } from './core/guards/auth.guard';
@@ -39,6 +41,7 @@ export const routes: Routes = [
       },
       { path: 'jobs', component: JobsComponent },
       { path: 'applications', component: ApplicationsComponent },
+      { path: 'assessments', component: AssessmentsComponent },
       { 
         path: 'reports', 
         component: ReportsComponent, 
@@ -52,7 +55,8 @@ export const routes: Routes = [
         canActivate: [roleGuard], 
         data: { roles: ['admin'] } 
       },
-      { path: 'notices', component: NoticesComponent }
+      { path: 'notices', component: NoticesComponent },
+      { path: 'mailbox', component: MailboxComponent }
     ]
   },
   { path: '404', component: NotFoundComponent },

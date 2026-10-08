@@ -44,6 +44,8 @@ app.use('/api/offers', require('./routes/offerRoutes'));
 app.use('/api/activities', require('./routes/activityRoutes'));
 app.use('/api/interviews', require('./routes/interviewRoutes'));
 app.use('/api/emails', require('./routes/emailRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/assessments', require('./routes/assessmentRoutes'));
 app.use('/api/seeder', require('./routes/seederRoutes'));
 
 // Global Error Handler
